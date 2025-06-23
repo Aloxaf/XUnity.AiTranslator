@@ -12,11 +12,13 @@ class EnhancedTranslationService {
   final Ref _ref;
 
   TranslationConfig _config;
-  final List<Completer<void>> _activeRequests = [];
+  final List<_ConcurrencySlot> _activeRequests = [];
+  bool _disposed = false;
 
   EnhancedTranslationService(this._llmService, this._config, this._ref);
 
   void updateConfig(TranslationConfig config) {
+    if (_disposed) return;
     _config = config;
   }
 
@@ -25,14 +27,19 @@ class EnhancedTranslationService {
     required String from,
     required String to,
   }) async {
+    if (_disposed) {
+      throw StateError('Service has been disposed');
+    }
+
+    if (text.trim().isEmpty) {
+      throw ArgumentError('Translation text cannot be empty');
+    }
+
     final logId = _generateLogId();
     final startTime = DateTime.now();
 
     // 等待并发槽位
-    await _waitForSlot();
-
-    final completer = Completer<void>();
-    _activeRequests.add(completer);
+    final slot = await _acquireSlot();
 
     try {
       final result = await _llmService.translate(
@@ -48,18 +55,18 @@ class EnhancedTranslationService {
       final duration = endTime.difference(startTime);
 
       // 记录成功日志
-      final log = TranslationLog(
-        id: logId,
-        timestamp: startTime,
-        from: from,
-        to: to,
-        originalText: text,
-        translatedText: result,
-        duration: duration,
-        isSuccess: true,
+      _addLog(
+        TranslationLog(
+          id: logId,
+          timestamp: startTime,
+          from: from,
+          to: to,
+          originalText: text,
+          translatedText: result,
+          duration: duration,
+          isSuccess: true,
+        ),
       );
-
-      _ref.read(translationLogsProvider.notifier).addLog(log);
 
       return result;
     } catch (e) {
@@ -67,33 +74,52 @@ class EnhancedTranslationService {
       final duration = endTime.difference(startTime);
 
       // 记录失败日志
-      final log = TranslationLog(
-        id: logId,
-        timestamp: startTime,
-        from: from,
-        to: to,
-        originalText: text,
-        translatedText: '',
-        duration: duration,
-        isSuccess: false,
-        error: e.toString(),
+      _addLog(
+        TranslationLog(
+          id: logId,
+          timestamp: startTime,
+          from: from,
+          to: to,
+          originalText: text,
+          translatedText: '',
+          duration: duration,
+          isSuccess: false,
+          error: e.toString(),
+        ),
       );
-
-      _ref.read(translationLogsProvider.notifier).addLog(log);
 
       rethrow;
     } finally {
-      _activeRequests.remove(completer);
-      completer.complete();
+      _releaseSlot(slot);
     }
   }
 
-  Future<void> _waitForSlot() async {
+  Future<_ConcurrencySlot> _acquireSlot() async {
     while (_activeRequests.length >= _config.concurrency) {
+      if (_disposed) {
+        throw StateError('Service has been disposed');
+      }
+
       // 等待任意一个请求完成
       if (_activeRequests.isNotEmpty) {
-        await Future.any(_activeRequests.map((c) => c.future));
+        final completers = _activeRequests.map((slot) => slot.completer.future);
+        await Future.any(completers);
       }
+    }
+
+    final slot = _ConcurrencySlot();
+    _activeRequests.add(slot);
+    return slot;
+  }
+
+  void _releaseSlot(_ConcurrencySlot slot) {
+    _activeRequests.remove(slot);
+    slot.completer.complete();
+  }
+
+  void _addLog(TranslationLog log) {
+    if (!_disposed && _ref.read(translationLogsProvider.notifier).mounted) {
+      _ref.read(translationLogsProvider.notifier).addLog(log);
     }
   }
 
@@ -106,6 +132,25 @@ class EnhancedTranslationService {
     ).join();
   }
 
+  void dispose() {
+    if (_disposed) return;
+
+    _disposed = true;
+
+    // 完成所有待处理的请求
+    for (final slot in _activeRequests) {
+      if (!slot.completer.isCompleted) {
+        slot.completer.complete();
+      }
+    }
+    _activeRequests.clear();
+  }
+
   int get activeRequestsCount => _activeRequests.length;
   int get maxConcurrency => _config.concurrency;
+  bool get isDisposed => _disposed;
+}
+
+class _ConcurrencySlot {
+  final Completer<void> completer = Completer<void>();
 }
