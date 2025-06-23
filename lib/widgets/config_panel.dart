@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,11 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
   late TextEditingController _modelController;
 
   String _selectedProvider = 'OpenRouter';
+
+  // 自动保存相关
+  Timer? _saveTimer;
+  bool _isSaving = false;
+  bool _isUserEditing = false;
 
   final List<String> _providers = [
     'OpenRouter',
@@ -69,7 +75,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
   }
 
   void _updateControllers(TranslationConfig config) {
-    if (mounted) {
+    if (mounted && !_isUserEditing) {
       setState(() {
         _portController.text = config.serverPort.toString();
         _promptController.text = config.promptTemplate;
@@ -85,6 +91,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
 
   @override
   void dispose() {
+    _saveTimer?.cancel();
     _portController.dispose();
     _promptController.dispose();
     _regexController.dispose();
@@ -103,16 +110,32 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
         _baseUrlController.text = defaults['baseUrl']!;
         _modelController.text = defaults['model']!;
       });
+      _scheduleAutoSave();
     }
   }
 
-  void _saveConfig() {
+  // 计划自动保存
+  void _scheduleAutoSave() {
+    if (_isSaving) return;
+
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 200), () {
+      if (!_isUserEditing) {
+        _autoSaveConfig();
+      }
+    });
+  }
+
+  // 自动保存配置
+  void _autoSaveConfig() async {
+    if (_isSaving || _isUserEditing) return;
+
     try {
-      final config = TranslationConfig(
-        serverPort: int.parse(_portController.text),
+      final newConfig = TranslationConfig(
+        serverPort: int.tryParse(_portController.text) ?? 8080,
         promptTemplate: _promptController.text,
         outputRegex: _regexController.text,
-        concurrency: int.parse(_concurrencyController.text),
+        concurrency: int.tryParse(_concurrencyController.text) ?? 3,
         llmService: LLMServiceConfig(
           provider: _selectedProvider,
           baseUrl: _baseUrlController.text,
@@ -121,45 +144,91 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
         ),
       );
 
-      ref.read(configProvider.notifier).updateConfig(config);
+      final currentConfig = ref.read(configProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('配置已保存'),
-            ],
+      // 只有配置真的发生变化时才保存
+      if (_configsAreEqual(currentConfig, newConfig)) {
+        return;
+      }
+
+      setState(() {
+        _isSaving = true;
+      });
+
+      await ref.read(configProvider.notifier).updateConfig(newConfig);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.cloud_done, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text('配置已保存', style: TextStyle(fontSize: 14)),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
           ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('保存配置失败: $e'),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '自动保存失败: $e',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(16),
           ),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
+  }
+
+  // 比较两个配置是否相等
+  bool _configsAreEqual(TranslationConfig a, TranslationConfig b) {
+    return a.serverPort == b.serverPort &&
+        a.promptTemplate == b.promptTemplate &&
+        a.outputRegex == b.outputRegex &&
+        a.concurrency == b.concurrency &&
+        a.llmService.provider == b.llmService.provider &&
+        a.llmService.baseUrl == b.llmService.baseUrl &&
+        a.llmService.apiKey == b.llmService.apiKey &&
+        a.llmService.model == b.llmService.model;
   }
 
   @override
   Widget build(BuildContext context) {
-    // 监听配置变化并更新控制器
+    // 监听配置变化并更新控制器（但避免在保存时触发）
     ref.listen<TranslationConfig>(configProvider, (previous, next) {
-      if (previous != next) {
+      if (previous != next && !_isSaving) {
         _updateControllers(next);
       }
     });
@@ -323,25 +392,6 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
             ),
           ],
         ),
-
-        const SizedBox(height: 32),
-
-        // 保存按钮
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _saveConfig,
-            icon: const Icon(Icons.save),
-            label: const Text('保存配置'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -402,18 +452,30 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
           ),
         ),
         const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          maxLines: maxLines,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+        Focus(
+          onFocusChange: (hasFocus) {
+            setState(() {
+              _isUserEditing = hasFocus;
+            });
+
+            if (!hasFocus) {
+              // 失去焦点时触发自动保存
+              _scheduleAutoSave();
+            }
+          },
+          child: TextField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            maxLines: maxLines,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: hint,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
         ),

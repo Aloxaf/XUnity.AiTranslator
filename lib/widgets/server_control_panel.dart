@@ -264,7 +264,7 @@ class ServerControlPanel extends ConsumerWidget {
                   title: '翻译端点',
                   description: '用于翻译文本的主要 API 端点',
                   url:
-                      'curl http://localhost:${serverState.port}/translate?from=en&to=zh&text=Hello',
+                      'curl "http://localhost:${serverState.port}/translate?from=en&to=zh&text=Hello"',
                   icon: Icons.translate,
                 ),
 
@@ -274,7 +274,7 @@ class ServerControlPanel extends ConsumerWidget {
                   context: context,
                   title: '健康检查',
                   description: '检查服务器运行状态',
-                  url: 'curl http://localhost:${serverState.port}/health',
+                  url: 'curl "http://localhost:${serverState.port}/health"',
                   icon: Icons.health_and_safety,
                 ),
               ],

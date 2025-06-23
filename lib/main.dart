@@ -194,7 +194,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 12,
-                              ),
+      ),
                               decoration: BoxDecoration(
                                 color: isActive
                                     ? const Color(0xFF6366F1).withOpacity(0.1)
@@ -242,21 +242,21 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                 // 底部信息
                 Container(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+        child: Column(
                     children: [
                       Divider(
                         color: Theme.of(context).dividerColor.withOpacity(0.1),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+            Text(
                         'v1.0.0',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white.withOpacity(0.4),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+            ),
+          ],
+        ),
+      ),
               ],
             ),
           ),
