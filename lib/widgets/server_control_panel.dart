@@ -1,15 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
+import 'auto_save_mixin.dart';
 
-class ServerControlPanel extends ConsumerWidget {
+class ServerControlPanel extends ConsumerStatefulWidget {
   const ServerControlPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ServerControlPanel> createState() => _ServerControlPanelState();
+}
+
+class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
+    with AutoSaveMixin {
+  late TextEditingController _portController;
+  late TextEditingController _concurrencyController;
+
+  @override
+  void initState() {
+    super.initState();
+    // 使用默认配置初始化控制器
+    _initControllers(const TranslationConfig());
+
+    // 延迟加载实际配置
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final config = ref.read(configProvider);
+      onConfigChanged(config);
+    });
+  }
+
+  void _initControllers(TranslationConfig config) {
+    _portController = TextEditingController(text: config.serverPort.toString());
+    _concurrencyController = TextEditingController(
+      text: config.concurrency.toString(),
+    );
+  }
+
+  @override
+  void onConfigChanged(TranslationConfig config) {
+    if (mounted && !isUserEditing) {
+      setState(() {
+        _portController.text = config.serverPort.toString();
+        _concurrencyController.text = config.concurrency.toString();
+      });
+    }
+  }
+
+  @override
+  TranslationConfig createUpdatedConfig(TranslationConfig currentConfig) {
+    return currentConfig.copyWith(
+      serverPort: int.tryParse(_portController.text) ?? 8080,
+      concurrency: int.tryParse(_concurrencyController.text) ?? 3,
+    );
+  }
+
+  @override
+  bool configsAreEqual(TranslationConfig a, TranslationConfig b) {
+    return a.serverPort == b.serverPort && a.concurrency == b.concurrency;
+  }
+
+  @override
+  void dispose() {
+    _portController.dispose();
+    _concurrencyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final serverState = ref.watch(serverStateProvider);
     final config = ref.watch(configProvider);
+
+    // 设置配置监听器
+    setupConfigListener();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -20,7 +84,7 @@ class ServerControlPanel extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withOpacity(0.1),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -43,10 +107,70 @@ class ServerControlPanel extends ConsumerWidget {
         Text(
           '启动和管理 HTTP 翻译服务',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 32),
+
+        // 服务配置卡片
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.grey.shade800.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.settings,
+                    color: const Color(0xFF6366F1),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '服务配置',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: buildAutoSaveTextField(
+                      controller: _portController,
+                      label: 'HTTP 服务端口',
+                      hint: '8080',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: buildAutoSaveTextField(
+                      controller: _concurrencyController,
+                      label: '并发数量',
+                      hint: '3',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
 
         // 服务器状态卡片
         Container(
@@ -54,7 +178,9 @@ class ServerControlPanel extends ConsumerWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1A1A1A),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
+            border: Border.all(
+              color: Colors.grey.shade800.withValues(alpha: 0.5),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,13 +205,13 @@ class ServerControlPanel extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: serverState.isRunning
-                      ? const Color(0xFF10B981).withOpacity(0.1)
-                      : const Color(0xFF6B7280).withOpacity(0.1),
+                      ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                      : const Color(0xFF6B7280).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: serverState.isRunning
-                        ? const Color(0xFF10B981).withOpacity(0.3)
-                        : const Color(0xFF6B7280).withOpacity(0.3),
+                        ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                        : const Color(0xFF6B7280).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -120,7 +246,7 @@ class ServerControlPanel extends ConsumerWidget {
                             Text(
                               '端口: ${serverState.port}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 14,
                               ),
                             ),
@@ -135,7 +261,7 @@ class ServerControlPanel extends ConsumerWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withOpacity(0.2),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -157,10 +283,10 @@ class ServerControlPanel extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withOpacity(0.1),
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: const Color(0xFFEF4444).withOpacity(0.3),
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -239,7 +365,9 @@ class ServerControlPanel extends ConsumerWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A1A),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
+              border: Border.all(
+                color: Colors.grey.shade800.withValues(alpha: 0.5),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,7 +425,7 @@ class ServerControlPanel extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0F0F0F),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade800.withOpacity(0.3)),
+        border: Border.all(color: Colors.grey.shade800.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +435,7 @@ class ServerControlPanel extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withOpacity(0.1),
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(icon, color: const Color(0xFF3B82F6), size: 16),
@@ -327,7 +455,7 @@ class ServerControlPanel extends ConsumerWidget {
           Text(
             description,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 12,
             ),
           ),
@@ -370,7 +498,7 @@ class ServerControlPanel extends ConsumerWidget {
                   icon: Icon(
                     Icons.copy,
                     size: 16,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                   tooltip: '复制',
                 ),

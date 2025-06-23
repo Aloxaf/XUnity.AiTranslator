@@ -87,7 +87,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
         color: Theme.of(context).cardColor,
         border: Border(
           right: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -126,7 +126,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
           Text(
             'Translator',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -159,11 +159,13 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0xFF6366F1).withOpacity(0.1)
+                  ? const Color(0xFF6366F1).withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: isActive
-                  ? Border.all(color: const Color(0xFF6366F1).withOpacity(0.3))
+                  ? Border.all(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                    )
                   : null,
             ),
             child: Row(
@@ -172,7 +174,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   isActive ? tab.activeIcon : tab.icon,
                   color: isActive
                       ? const Color(0xFF6366F1)
-                      : Colors.white.withOpacity(0.6),
+                      : Colors.white.withValues(alpha: 0.6),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -181,7 +183,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   style: TextStyle(
                     color: isActive
                         ? const Color(0xFF6366F1)
-                        : Colors.white.withOpacity(0.8),
+                        : Colors.white.withValues(alpha: 0.8),
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
@@ -198,12 +200,12 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Divider(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+          Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
           const SizedBox(height: 8),
           Text(
             'v1.0.0',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
             ),
           ),
         ],

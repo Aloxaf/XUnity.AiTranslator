@@ -32,6 +32,8 @@ class ConfigNotifier extends StateNotifier<TranslationConfig> {
 
       if (configJson != null && configJson.isNotEmpty) {
         final configMap = json.decode(configJson) as Map<String, dynamic>;
+
+        // 新版本配置
         final loadedConfig = TranslationConfig.fromJson(configMap);
 
         if (mounted) {

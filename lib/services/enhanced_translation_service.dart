@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:logger/logger.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
 import 'llm_service.dart';
 
 class EnhancedTranslationService {
   final LLMService _llmService;
-  final Logger _logger = Logger();
   final Ref _ref;
 
   TranslationConfig _config;

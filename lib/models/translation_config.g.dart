@@ -15,9 +15,30 @@ TranslationConfig _$TranslationConfigFromJson(
       'Translate the following text from {from} to {to}:\n\n{text}\n\nTranslation:',
   outputRegex: json['outputRegex'] as String? ?? r'Translation:\s*(.+)',
   concurrency: (json['concurrency'] as num?)?.toInt() ?? 3,
-  llmService: json['llmService'] == null
-      ? const LLMServiceConfig()
-      : LLMServiceConfig.fromJson(json['llmService'] as Map<String, dynamic>),
+  currentProvider: json['currentProvider'] as String? ?? 'OpenRouter',
+  llmProviders:
+      (json['llmProviders'] as Map<String, dynamic>?)?.map(
+        (k, e) =>
+            MapEntry(k, LLMProviderConfig.fromJson(e as Map<String, dynamic>)),
+      ) ??
+      const {
+        'OpenRouter': LLMProviderConfig(
+          baseUrl: 'https://openrouter.ai/api/v1',
+          apiKey: '',
+          model: 'anthropic/claude-3.5-sonnet',
+        ),
+        'OpenAI': LLMProviderConfig(
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: '',
+          model: 'gpt-4',
+        ),
+        'Azure OpenAI': LLMProviderConfig(
+          baseUrl: 'https://your-resource.openai.azure.com',
+          apiKey: '',
+          model: 'gpt-4',
+        ),
+        '自定义': LLMProviderConfig(baseUrl: '', apiKey: '', model: ''),
+      },
 );
 
 Map<String, dynamic> _$TranslationConfigToJson(TranslationConfig instance) =>
@@ -26,7 +47,22 @@ Map<String, dynamic> _$TranslationConfigToJson(TranslationConfig instance) =>
       'promptTemplate': instance.promptTemplate,
       'outputRegex': instance.outputRegex,
       'concurrency': instance.concurrency,
-      'llmService': instance.llmService,
+      'currentProvider': instance.currentProvider,
+      'llmProviders': instance.llmProviders,
+    };
+
+LLMProviderConfig _$LLMProviderConfigFromJson(Map<String, dynamic> json) =>
+    LLMProviderConfig(
+      baseUrl: json['baseUrl'] as String? ?? '',
+      apiKey: json['apiKey'] as String? ?? '',
+      model: json['model'] as String? ?? '',
+    );
+
+Map<String, dynamic> _$LLMProviderConfigToJson(LLMProviderConfig instance) =>
+    <String, dynamic>{
+      'baseUrl': instance.baseUrl,
+      'apiKey': instance.apiKey,
+      'model': instance.model,
     };
 
 LLMServiceConfig _$LLMServiceConfigFromJson(Map<String, dynamic> json) =>

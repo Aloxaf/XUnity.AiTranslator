@@ -19,7 +19,7 @@ class TranslationLogs extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withOpacity(0.1),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -44,10 +44,10 @@ class TranslationLogs extends ConsumerWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withOpacity(0.1),
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFF6366F1).withOpacity(0.3),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(
@@ -68,7 +68,7 @@ class TranslationLogs extends ConsumerWidget {
               child: Text(
                 '查看所有翻译请求的详细记录',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -93,7 +93,9 @@ class TranslationLogs extends ConsumerWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1A1A1A),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
+            border: Border.all(
+              color: Colors.grey.shade800.withValues(alpha: 0.5),
+            ),
           ),
           child: logs.isEmpty
               ? _buildEmptyState()
@@ -105,7 +107,7 @@ class TranslationLogs extends ConsumerWidget {
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                            color: Colors.grey.shade800.withOpacity(0.3),
+                            color: Colors.grey.shade800.withValues(alpha: 0.3),
                           ),
                         ),
                       ),
@@ -158,7 +160,7 @@ class TranslationLogs extends ConsumerWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.grey.shade800.withOpacity(0.3),
+              color: Colors.grey.shade800.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -241,8 +243,8 @@ class _TranslationLogItemState extends State<TranslationLogItem>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: widget.log.isSuccess
-              ? const Color(0xFF10B981).withOpacity(0.3)
-              : const Color(0xFFEF4444).withOpacity(0.3),
+              ? const Color(0xFF10B981).withValues(alpha: 0.3)
+              : const Color(0xFFEF4444).withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -277,7 +279,7 @@ class _TranslationLogItemState extends State<TranslationLogItem>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.1),
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -312,7 +314,7 @@ class _TranslationLogItemState extends State<TranslationLogItem>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade800.withOpacity(0.5),
+                        color: Colors.grey.shade800.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -358,7 +360,9 @@ class _TranslationLogItemState extends State<TranslationLogItem>
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Colors.grey.shade800.withOpacity(0.3)),
+                  top: BorderSide(
+                    color: Colors.grey.shade800.withValues(alpha: 0.3),
+                  ),
                 ),
               ),
               child: Column(
@@ -370,8 +374,8 @@ class _TranslationLogItemState extends State<TranslationLogItem>
                   _buildContentSection(
                     title: '原文',
                     content: widget.log.originalText,
-                    bgColor: const Color(0xFF1E40AF).withOpacity(0.1),
-                    borderColor: const Color(0xFF1E40AF).withOpacity(0.3),
+                    bgColor: const Color(0xFF1E40AF).withValues(alpha: 0.1),
+                    borderColor: const Color(0xFF1E40AF).withValues(alpha: 0.3),
                     titleColor: const Color(0xFF3B82F6),
                   ),
                   const SizedBox(height: 12),
@@ -381,16 +385,20 @@ class _TranslationLogItemState extends State<TranslationLogItem>
                     _buildContentSection(
                       title: '译文',
                       content: widget.log.translatedText,
-                      bgColor: const Color(0xFF10B981).withOpacity(0.1),
-                      borderColor: const Color(0xFF10B981).withOpacity(0.3),
+                      bgColor: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      borderColor: const Color(
+                        0xFF10B981,
+                      ).withValues(alpha: 0.3),
                       titleColor: const Color(0xFF10B981),
                     )
                   else if (widget.log.error != null)
                     _buildContentSection(
                       title: '错误信息',
                       content: widget.log.error!,
-                      bgColor: const Color(0xFFEF4444).withOpacity(0.1),
-                      borderColor: const Color(0xFFEF4444).withOpacity(0.3),
+                      bgColor: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                      borderColor: const Color(
+                        0xFFEF4444,
+                      ).withValues(alpha: 0.3),
                       titleColor: const Color(0xFFEF4444),
                     ),
 
@@ -468,10 +476,10 @@ class _TranslationLogItemState extends State<TranslationLogItem>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: (color ?? Colors.grey.shade600).withOpacity(0.1),
+        color: (color ?? Colors.grey.shade600).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: (color ?? Colors.grey.shade600).withOpacity(0.3),
+          color: (color ?? Colors.grey.shade600).withValues(alpha: 0.3),
         ),
       ),
       child: Text(

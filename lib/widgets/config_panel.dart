@@ -1,9 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
+import 'auto_save_mixin.dart';
 
 class ConfigPanel extends ConsumerStatefulWidget {
   const ConfigPanel({super.key});
@@ -12,21 +11,14 @@ class ConfigPanel extends ConsumerStatefulWidget {
   ConsumerState<ConfigPanel> createState() => _ConfigPanelState();
 }
 
-class _ConfigPanelState extends ConsumerState<ConfigPanel> {
-  late TextEditingController _portController;
+class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
   late TextEditingController _promptController;
   late TextEditingController _regexController;
-  late TextEditingController _concurrencyController;
   late TextEditingController _baseUrlController;
   late TextEditingController _apiKeyController;
   late TextEditingController _modelController;
 
   String _selectedProvider = 'OpenRouter';
-
-  // 自动保存相关
-  Timer? _saveTimer;
-  bool _isSaving = false;
-  bool _isUserEditing = false;
 
   final List<String> _providers = [
     'OpenRouter',
@@ -35,6 +27,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
     '自定义',
   ];
 
+  // 默认配置模板，仅在用户首次切换到某个提供商时使用
   final Map<String, Map<String, String>> _providerDefaults = {
     'OpenRouter': {
       'baseUrl': 'https://openrouter.ai/api/v1',
@@ -57,45 +50,72 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
     // 延迟加载实际配置
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final config = ref.read(configProvider);
-      _updateControllers(config);
+      onConfigChanged(config);
     });
   }
 
   void _initControllers(TranslationConfig config) {
-    _portController = TextEditingController(text: config.serverPort.toString());
     _promptController = TextEditingController(text: config.promptTemplate);
     _regexController = TextEditingController(text: config.outputRegex);
-    _concurrencyController = TextEditingController(
-      text: config.concurrency.toString(),
-    );
-    _baseUrlController = TextEditingController(text: config.llmService.baseUrl);
-    _apiKeyController = TextEditingController(text: config.llmService.apiKey);
-    _modelController = TextEditingController(text: config.llmService.model);
-    _selectedProvider = config.llmService.provider;
+
+    final currentConfig = config.currentLLMConfig;
+    _baseUrlController = TextEditingController(text: currentConfig.baseUrl);
+    _apiKeyController = TextEditingController(text: currentConfig.apiKey);
+    _modelController = TextEditingController(text: currentConfig.model);
+    _selectedProvider = config.currentProvider;
   }
 
-  void _updateControllers(TranslationConfig config) {
-    if (mounted && !_isUserEditing) {
+  @override
+  void onConfigChanged(TranslationConfig config) {
+    if (mounted && !isUserEditing) {
       setState(() {
-        _portController.text = config.serverPort.toString();
         _promptController.text = config.promptTemplate;
         _regexController.text = config.outputRegex;
-        _concurrencyController.text = config.concurrency.toString();
-        _baseUrlController.text = config.llmService.baseUrl;
-        _apiKeyController.text = config.llmService.apiKey;
-        _modelController.text = config.llmService.model;
-        _selectedProvider = config.llmService.provider;
+
+        final currentConfig = config.currentLLMConfig;
+        _baseUrlController.text = currentConfig.baseUrl;
+        _apiKeyController.text = currentConfig.apiKey;
+        _modelController.text = currentConfig.model;
+        _selectedProvider = config.currentProvider;
       });
     }
   }
 
   @override
+  TranslationConfig createUpdatedConfig(TranslationConfig currentConfig) {
+    // 更新当前提供商的配置
+    final updatedProviderConfig = LLMProviderConfig(
+      baseUrl: _baseUrlController.text,
+      apiKey: _apiKeyController.text,
+      model: _modelController.text,
+    );
+
+    return currentConfig
+        .updateProviderConfig(_selectedProvider, updatedProviderConfig)
+        .copyWith(
+          promptTemplate: _promptController.text,
+          outputRegex: _regexController.text,
+          currentProvider: _selectedProvider,
+        );
+  }
+
+  @override
+  bool configsAreEqual(TranslationConfig a, TranslationConfig b) {
+    final aCurrentConfig = a.currentLLMConfig;
+    final bCurrentConfig = b.currentLLMConfig;
+
+    return a.promptTemplate == b.promptTemplate &&
+        a.outputRegex == b.outputRegex &&
+        a.currentProvider == b.currentProvider &&
+        aCurrentConfig.baseUrl == bCurrentConfig.baseUrl &&
+        aCurrentConfig.apiKey == bCurrentConfig.apiKey &&
+        aCurrentConfig.model == bCurrentConfig.model;
+  }
+
+  @override
   void dispose() {
-    _saveTimer?.cancel();
-    _portController.dispose();
     _promptController.dispose();
     _regexController.dispose();
-    _concurrencyController.dispose();
     _baseUrlController.dispose();
     _apiKeyController.dispose();
     _modelController.dispose();
@@ -103,135 +123,55 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
   }
 
   void _onProviderChanged(String? provider) {
-    if (provider != null) {
-      setState(() {
-        _selectedProvider = provider;
-        final defaults = _providerDefaults[provider]!;
-        _baseUrlController.text = defaults['baseUrl']!;
-        _modelController.text = defaults['model']!;
-      });
-      _scheduleAutoSave();
-    }
-  }
-
-  // 计划自动保存
-  void _scheduleAutoSave() {
-    if (_isSaving) return;
-
-    _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(milliseconds: 200), () {
-      if (!_isUserEditing) {
-        _autoSaveConfig();
-      }
-    });
-  }
-
-  // 自动保存配置
-  void _autoSaveConfig() async {
-    if (_isSaving || _isUserEditing) return;
-
-    try {
-      final newConfig = TranslationConfig(
-        serverPort: int.tryParse(_portController.text) ?? 8080,
-        promptTemplate: _promptController.text,
-        outputRegex: _regexController.text,
-        concurrency: int.tryParse(_concurrencyController.text) ?? 3,
-        llmService: LLMServiceConfig(
-          provider: _selectedProvider,
-          baseUrl: _baseUrlController.text,
-          apiKey: _apiKeyController.text,
-          model: _modelController.text,
-        ),
+    if (provider != null && provider != _selectedProvider) {
+      // 先保存当前提供商的配置
+      final currentConfig = ref.read(configProvider);
+      final updatedCurrentProviderConfig = LLMProviderConfig(
+        baseUrl: _baseUrlController.text,
+        apiKey: _apiKeyController.text,
+        model: _modelController.text,
       );
 
-      final currentConfig = ref.read(configProvider);
+      final configWithCurrentSaved = currentConfig.updateProviderConfig(
+        _selectedProvider,
+        updatedCurrentProviderConfig,
+      );
 
-      // 只有配置真的发生变化时才保存
-      if (_configsAreEqual(currentConfig, newConfig)) {
-        return;
+      // 获取目标提供商的已保存配置，如果没有则使用默认值
+      LLMProviderConfig targetConfig =
+          configWithCurrentSaved.llmProviders[provider] ??
+          const LLMProviderConfig();
+
+      // 如果目标提供商的配置是空的（首次切换），使用默认配置
+      if (targetConfig.baseUrl.isEmpty && targetConfig.model.isEmpty) {
+        final defaults = _providerDefaults[provider]!;
+        targetConfig = LLMProviderConfig(
+          baseUrl: defaults['baseUrl']!,
+          apiKey: targetConfig.apiKey, // 保留已设置的API密钥
+          model: defaults['model']!,
+        );
       }
 
       setState(() {
-        _isSaving = true;
+        _selectedProvider = provider;
+        _baseUrlController.text = targetConfig.baseUrl;
+        _apiKeyController.text = targetConfig.apiKey;
+        _modelController.text = targetConfig.model;
       });
 
-      await ref.read(configProvider.notifier).updateConfig(newConfig);
+      // 保存配置
+      final finalConfig = configWithCurrentSaved
+          .updateProviderConfig(provider, targetConfig)
+          .switchProvider(provider);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.cloud_done, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('配置已保存', style: TextStyle(fontSize: 14)),
-              ],
-            ),
-            backgroundColor: const Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '自动保存失败: $e',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            duration: const Duration(seconds: 3),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      ref.read(configProvider.notifier).updateConfig(finalConfig);
     }
-  }
-
-  // 比较两个配置是否相等
-  bool _configsAreEqual(TranslationConfig a, TranslationConfig b) {
-    return a.serverPort == b.serverPort &&
-        a.promptTemplate == b.promptTemplate &&
-        a.outputRegex == b.outputRegex &&
-        a.concurrency == b.concurrency &&
-        a.llmService.provider == b.llmService.provider &&
-        a.llmService.baseUrl == b.llmService.baseUrl &&
-        a.llmService.apiKey == b.llmService.apiKey &&
-        a.llmService.model == b.llmService.model;
   }
 
   @override
   Widget build(BuildContext context) {
-    // 监听配置变化并更新控制器（但避免在保存时触发）
-    ref.listen<TranslationConfig>(configProvider, (previous, next) {
-      if (previous != next && !_isSaving) {
-        _updateControllers(next);
-      }
-    });
+    // 设置配置监听器
+    setupConfigListener();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +182,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withOpacity(0.1),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.tune, color: Color(0xFF6366F1), size: 20),
@@ -261,43 +201,10 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
         Text(
           '配置翻译服务的各项参数',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 32),
-
-        // 服务配置卡片
-        _buildConfigCard(
-          title: '服务配置',
-          icon: Icons.settings,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    controller: _portController,
-                    label: 'HTTP 服务端口',
-                    hint: '8080',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    controller: _concurrencyController,
-                    label: '并发数量',
-                    hint: '3',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
 
         // LLM 服务配置卡片
         _buildConfigCard(
@@ -311,7 +218,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
               onChanged: _onProviderChanged,
             ),
             const SizedBox(height: 16),
-            _buildTextField(
+            buildAutoSaveTextField(
               controller: _baseUrlController,
               label: 'API 基础 URL',
               hint: 'https://openrouter.ai/api/v1',
@@ -321,7 +228,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
               children: [
                 Expanded(
                   flex: 2,
-                  child: _buildTextField(
+                  child: buildAutoSaveTextField(
                     controller: _apiKeyController,
                     label: 'API 密钥',
                     hint: '输入您的 API 密钥',
@@ -330,7 +237,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildTextField(
+                  child: buildAutoSaveTextField(
                     controller: _modelController,
                     label: '模型',
                     hint: 'gpt-4',
@@ -348,14 +255,15 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
           title: '提示词配置',
           icon: Icons.edit_note,
           children: [
-            _buildTextField(
+            buildAutoSaveTextField(
               controller: _promptController,
               label: '提示词模板',
               hint: '支持 {from}, {to}, {text} 变量',
-              maxLines: 4,
+              maxLines: null,
+              minLines: 4,
             ),
             const SizedBox(height: 16),
-            _buildTextField(
+            buildAutoSaveTextField(
               controller: _regexController,
               label: '输出提取正则表达式',
               hint: r'Translation:\s*(.+)',
@@ -364,10 +272,10 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E40AF).withOpacity(0.1),
+                color: const Color(0xFF1E40AF).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: const Color(0xFF1E40AF).withOpacity(0.2),
+                  color: const Color(0xFF1E40AF).withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -406,7 +314,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
+        border: Border.all(color: Colors.grey.shade800.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,58 +336,6 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> {
           ...children,
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hint,
-    bool obscureText = false,
-    TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Focus(
-          onFocusChange: (hasFocus) {
-            setState(() {
-              _isUserEditing = hasFocus;
-            });
-
-            if (!hasFocus) {
-              // 失去焦点时触发自动保存
-              _scheduleAutoSave();
-            }
-          },
-          child: TextField(
-            controller: controller,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            inputFormatters: inputFormatters,
-            maxLines: maxLines,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: hint,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

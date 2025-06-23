@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'package:logger/logger.dart';
 import '../models/translation_config.dart';
 import 'llm_service.dart';
 
 class TranslationService {
   final LLMService _llmService;
-  final Logger _logger = Logger();
 
   TranslationConfig _config;
   final List<Completer<void>> _activeRequests = [];
