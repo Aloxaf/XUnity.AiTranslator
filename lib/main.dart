@@ -99,7 +99,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
 
   Widget _buildAppHeader() {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AppTheme.spacingXXXLarge),
       child: Column(
         children: [
           Container(
@@ -107,27 +107,31 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
             height: 64,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXXLarge),
             ),
-            child: const Icon(Icons.translate, color: Colors.white, size: 32),
+            child: Icon(
+              Icons.translate,
+              color: AppTheme.textPrimary,
+              size: AppTheme.iconSizeXLarge,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppTheme.spacingLarge),
           Text(
             'XUnity AI',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppTheme.textPrimary,
             ),
           ),
           Text(
             'Translator',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.6),
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -137,7 +141,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   Widget _buildNavigationMenu() {
     return Expanded(
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingLarge),
         itemCount: _tabs.length,
         itemBuilder: (context, index) => _buildNavigationItem(index),
       ),
@@ -149,22 +153,25 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     final isActive = index == _currentIndex;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: AppTheme.spacingMedium),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _onTabTapped(index),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacingLarge,
+              vertical: AppTheme.spacingMedium,
+            ),
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0xFF6366F1).withValues(alpha: 0.1)
+                  ? AppTheme.primaryColor.withValues(alpha: 0.1)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
               border: isActive
                   ? Border.all(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.3),
                     )
                   : null,
             ),
@@ -173,17 +180,17 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                 Icon(
                   isActive ? tab.activeIcon : tab.icon,
                   color: isActive
-                      ? const Color(0xFF6366F1)
-                      : Colors.white.withValues(alpha: 0.6),
-                  size: 20,
+                      ? AppTheme.primaryColor
+                      : AppTheme.textSecondary,
+                  size: AppTheme.iconSizeMedium,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppTheme.spacingMedium),
                 Text(
                   tab.label,
                   style: TextStyle(
                     color: isActive
-                        ? const Color(0xFF6366F1)
-                        : Colors.white.withValues(alpha: 0.8),
+                        ? AppTheme.primaryColor
+                        : AppTheme.textPrimary.withValues(alpha: 0.8),
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
@@ -197,16 +204,16 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
 
   Widget _buildFooter() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTheme.spacingLarge),
       child: Column(
         children: [
           Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppTheme.spacingMedium),
           Text(
             'v1.0.0',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.4),
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textTertiary),
           ),
         ],
       ),
@@ -255,10 +262,13 @@ class _ContentWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isExpandable) {
-      return Padding(padding: const EdgeInsets.all(32), child: child);
+      return Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingXXXLarge),
+        child: child,
+      );
     }
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AppTheme.spacingXXXLarge),
       child: child,
     );
   }

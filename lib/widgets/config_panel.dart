@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
+import '../theme/app_theme.dart';
 import 'auto_save_mixin.dart';
+import 'common_widgets.dart';
 
 class ConfigPanel extends ConsumerStatefulWidget {
   const ConfigPanel({super.key});
@@ -177,165 +179,84 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 页面标题
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.tune, color: Color(0xFF6366F1), size: 20),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '应用配置',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '配置翻译服务的各项参数',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.white.withValues(alpha: 0.6),
-          ),
-        ),
-        const SizedBox(height: 32),
+        PageHeader(title: '应用配置', subtitle: '配置翻译服务的各项参数', icon: Icons.tune),
+        const SizedBox(height: AppTheme.spacingXXXLarge),
 
         // LLM 服务配置卡片
-        _buildConfigCard(
-          title: 'LLM 服务配置',
-          icon: Icons.psychology,
-          children: [
-            _buildDropdownField(
-              label: 'LLM 服务提供商',
-              value: _selectedProvider,
-              items: _providers,
-              onChanged: _onProviderChanged,
-            ),
-            const SizedBox(height: 16),
-            buildAutoSaveTextField(
-              controller: _baseUrlController,
-              label: 'API 基础 URL',
-              hint: 'https://openrouter.ai/api/v1',
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: buildAutoSaveTextField(
-                    controller: _apiKeyController,
-                    label: 'API 密钥',
-                    hint: '输入您的 API 密钥',
-                    obscureText: true,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: buildAutoSaveTextField(
-                    controller: _modelController,
-                    label: '模型',
-                    hint: 'gpt-4',
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-
-        // 提示词配置卡片
-        _buildConfigCard(
-          title: '提示词配置',
-          icon: Icons.edit_note,
-          children: [
-            buildAutoSaveTextField(
-              controller: _promptController,
-              label: '提示词模板',
-              hint: '支持 {from}, {to}, {text} 变量',
-              maxLines: null,
-              minLines: 4,
-            ),
-            const SizedBox(height: 16),
-            buildAutoSaveTextField(
-              controller: _regexController,
-              label: '输出提取正则表达式',
-              hint: r'Translation:\s*(.+)',
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E40AF).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: const Color(0xFF1E40AF).withValues(alpha: 0.2),
-                ),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CardHeader(title: 'LLM 服务配置', icon: Icons.psychology),
+              const SizedBox(height: AppTheme.spacingXLarge),
+              _buildDropdownField(
+                label: 'LLM 服务提供商',
+                value: _selectedProvider,
+                items: _providers,
+                onChanged: _onProviderChanged,
               ),
-              child: Row(
+              const SizedBox(height: AppTheme.spacingLarge),
+              buildAutoSaveTextField(
+                controller: _baseUrlController,
+                label: 'API 基础 URL',
+                hint: 'https://openrouter.ai/api/v1',
+              ),
+              const SizedBox(height: AppTheme.spacingLarge),
+              Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: const Color(0xFF3B82F6),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      '提示词模板支持变量：{from} 源语言，{to} 目标语言，{text} 待翻译文本',
-                      style: TextStyle(
-                        color: const Color(0xFF3B82F6),
-                        fontSize: 12,
-                      ),
+                    flex: 2,
+                    child: buildAutoSaveTextField(
+                      controller: _apiKeyController,
+                      label: 'API 密钥',
+                      hint: '输入您的 API 密钥',
+                      obscureText: true,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingLarge),
+                  Expanded(
+                    child: buildAutoSaveTextField(
+                      controller: _modelController,
+                      label: '模型',
+                      hint: 'gpt-4',
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ],
-    );
-  }
 
-  Widget _buildConfigCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade800.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        const SizedBox(height: AppTheme.spacingXXLarge),
+
+        // 提示词配置卡片
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: const Color(0xFF6366F1), size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+              CardHeader(title: '提示词配置', icon: Icons.edit_note),
+              const SizedBox(height: AppTheme.spacingXLarge),
+              buildAutoSaveTextField(
+                controller: _promptController,
+                label: '提示词模板',
+                hint: '支持 {from}, {to}, {text} 变量',
+                maxLines: null,
+                minLines: 4,
+              ),
+              const SizedBox(height: AppTheme.spacingLarge),
+              buildAutoSaveTextField(
+                controller: _regexController,
+                label: '输出提取正则表达式',
+                hint: r'Translation:\s*(.+)',
+              ),
+              const SizedBox(height: AppTheme.spacingLarge),
+              InfoBox.info(
+                message: '提示词模板支持变量：{from} 源语言，{to} 目标语言，{text} 待翻译文本',
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          ...children,
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -350,26 +271,28 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppTheme.textPrimary,
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppTheme.spacingSmall),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingLarge,
+          ),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
             border: Border.all(color: Colors.grey.shade700),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1A1A1A),
-              style: const TextStyle(color: Colors.white),
+              dropdownColor: AppTheme.surfaceColor,
+              style: TextStyle(color: AppTheme.textPrimary),
               items: items.map((item) {
                 return DropdownMenuItem(value: item, child: Text(item));
               }).toList(),

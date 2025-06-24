@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
+import '../theme/app_theme.dart';
+import 'common_widgets.dart';
 
 class TranslationLogs extends ConsumerWidget {
   const TranslationLogs({super.key});
@@ -14,133 +16,72 @@ class TranslationLogs extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 页面标题
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.history,
-                color: Color(0xFF6366F1),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '翻译日志',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const Spacer(),
-            if (logs.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+        PageHeader(
+          title: '翻译日志',
+          subtitle: '查看所有翻译请求的详细记录',
+          icon: Icons.history,
+          actions: [if (logs.isNotEmpty) AppBadge(label: '${logs.length} 条记录')],
+        ),
+        if (logs.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: AppTheme.spacingMedium),
+            child: Row(
+              children: [
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () {
+                    ref.read(translationLogsProvider.notifier).clearLogs();
+                  },
+                  icon: const Icon(
+                    Icons.clear_all,
+                    size: AppTheme.iconSizeSmall,
+                  ),
+                  label: const Text('清空日志'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.errorColor,
                   ),
                 ),
-                child: Text(
-                  '${logs.length} 条记录',
-                  style: const TextStyle(
-                    color: Color(0xFF6366F1),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                '查看所有翻译请求的详细记录',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.6),
-                ),
-              ),
+              ],
             ),
-            if (logs.isNotEmpty)
-              TextButton.icon(
-                onPressed: () {
-                  ref.read(translationLogsProvider.notifier).clearLogs();
-                },
-                icon: const Icon(Icons.clear_all, size: 16),
-                label: const Text('清空日志'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFEF4444),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 32),
+          ),
+        const SizedBox(height: AppTheme.spacingXXXLarge),
 
         // 日志列表
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.grey.shade800.withValues(alpha: 0.5),
-              ),
-            ),
+          child: AppCard(
+            padding: EdgeInsets.zero,
             child: logs.isEmpty
-                ? _buildEmptyState()
+                ? EmptyState(
+                    title: '暂无翻译记录',
+                    subtitle: '启动服务器并进行翻译后，记录将在这里显示',
+                    icon: Icons.history_outlined,
+                  )
                 : Column(
                     children: [
                       // 列表头部
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(AppTheme.spacingXLarge),
                         decoration: BoxDecoration(
                           border: Border(
-                            bottom: BorderSide(
-                              color: Colors.grey.shade800.withValues(
-                                alpha: 0.3,
-                              ),
-                            ),
+                            bottom: BorderSide(color: AppTheme.dividerColor),
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.list_alt,
-                              color: const Color(0xFF6366F1),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '最近的翻译记录',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                            ),
-                          ],
+                        child: CardHeader(
+                          title: '最近的翻译记录',
+                          icon: Icons.list_alt,
                         ),
                       ),
                       // 日志项列表
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(AppTheme.spacingLarge),
                           itemCount: logs.length,
                           itemBuilder: (context, index) {
                             final log = logs[index];
                             return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
+                              margin: const EdgeInsets.only(
+                                bottom: AppTheme.spacingMedium,
+                              ),
                               child: TranslationLogItem(log: log),
                             );
                           },
@@ -151,44 +92,6 @@ class TranslationLogs extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade800.withValues(alpha: 0.3),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.history_outlined,
-              size: 40,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            '暂无翻译记录',
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '启动服务器并进行翻译后，记录将在这里显示',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -240,15 +143,13 @@ class _TranslationLogItemState extends State<TranslationLogItem>
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = widget.log.isSuccess
+        ? AppTheme.successColor
+        : AppTheme.errorColor;
+
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0F0F),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: widget.log.isSuccess
-              ? const Color(0xFF10B981).withValues(alpha: 0.3)
-              : const Color(0xFFEF4444).withValues(alpha: 0.3),
-        ),
+      decoration: AppTheme.contentDecoration(
+        borderColor: statusColor.withValues(alpha: 0.3),
       ),
       child: Column(
         children: [
@@ -257,9 +158,9 @@ class _TranslationLogItemState extends State<TranslationLogItem>
             color: Colors.transparent,
             child: InkWell(
               onTap: _toggleExpanded,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppTheme.spacingLarge),
                 child: Row(
                   children: [
                     // 状态指示器
@@ -267,78 +168,48 @@ class _TranslationLogItemState extends State<TranslationLogItem>
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: widget.log.isSuccess
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                        color: statusColor,
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppTheme.spacingMedium),
 
                     // 语言方向
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${widget.log.from} → ${widget.log.to}',
-                        style: const TextStyle(
-                          color: Color(0xFF6366F1),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                    AppChip.primary(
+                      label: '${widget.log.from} → ${widget.log.to}',
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppTheme.spacingMedium),
 
                     // 原文预览
                     Expanded(
                       child: Text(
                         widget.log.originalText,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
                           fontSize: 14,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppTheme.spacingMedium),
 
                     // 时长标签
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade800.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${widget.log.duration.inMilliseconds}ms',
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 10,
-                        ),
-                      ),
+                    AppChip.neutral(
+                      label: '${widget.log.duration.inMilliseconds}ms',
+                      fontSize: 10,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppTheme.spacingMedium),
 
                     // 时间
                     Text(
                       _formatTime(widget.log.timestamp),
                       style: TextStyle(
-                        color: Colors.grey.shade500,
+                        color: AppTheme.textDisabled,
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppTheme.spacingMedium),
 
                     // 展开图标
                     AnimatedRotation(
@@ -346,8 +217,8 @@ class _TranslationLogItemState extends State<TranslationLogItem>
                       duration: const Duration(milliseconds: 200),
                       child: Icon(
                         Icons.keyboard_arrow_down,
-                        color: Colors.grey.shade500,
-                        size: 20,
+                        color: AppTheme.textDisabled,
+                        size: AppTheme.iconSizeMedium,
                       ),
                     ),
                   ],
@@ -360,69 +231,57 @@ class _TranslationLogItemState extends State<TranslationLogItem>
           SizeTransition(
             sizeFactor: _expandAnimation,
             child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(
+                AppTheme.spacingLarge,
+                0,
+                AppTheme.spacingLarge,
+                AppTheme.spacingLarge,
+              ),
               decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.grey.shade800.withValues(alpha: 0.3),
-                  ),
-                ),
+                border: Border(top: BorderSide(color: AppTheme.dividerColor)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacingLarge),
 
                   // 原文
                   _buildContentSection(
                     title: '原文',
                     content: widget.log.originalText,
-                    bgColor: const Color(0xFF1E40AF).withValues(alpha: 0.1),
-                    borderColor: const Color(0xFF1E40AF).withValues(alpha: 0.3),
-                    titleColor: const Color(0xFF3B82F6),
+                    color: AppTheme.infoColor,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppTheme.spacingMedium),
 
                   // 译文或错误
                   if (widget.log.isSuccess)
                     _buildContentSection(
                       title: '译文',
                       content: widget.log.translatedText,
-                      bgColor: const Color(0xFF10B981).withValues(alpha: 0.1),
-                      borderColor: const Color(
-                        0xFF10B981,
-                      ).withValues(alpha: 0.3),
-                      titleColor: const Color(0xFF10B981),
+                      color: AppTheme.successColor,
                     )
                   else if (widget.log.error != null)
                     _buildContentSection(
                       title: '错误信息',
                       content: widget.log.error!,
-                      bgColor: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                      borderColor: const Color(
-                        0xFFEF4444,
-                      ).withValues(alpha: 0.3),
-                      titleColor: const Color(0xFFEF4444),
+                      color: AppTheme.errorColor,
                     ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacingLarge),
 
                   // 详细信息
-                  Row(
+                  Wrap(
+                    spacing: AppTheme.spacingMedium,
                     children: [
                       _buildInfoChip('ID', widget.log.id.substring(0, 8)),
-                      const SizedBox(width: 8),
                       _buildInfoChip(
                         '时长',
                         '${widget.log.duration.inMilliseconds}ms',
                       ),
-                      const SizedBox(width: 8),
                       _buildInfoChip(
                         '状态',
                         widget.log.isSuccess ? '成功' : '失败',
-                        color: widget.log.isSuccess
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                        color: statusColor,
                       ),
                     ],
                   ),
@@ -438,9 +297,7 @@ class _TranslationLogItemState extends State<TranslationLogItem>
   Widget _buildContentSection({
     required String title,
     required String content,
-    required Color bgColor,
-    required Color borderColor,
-    required Color titleColor,
+    required Color color,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,18 +306,18 @@ class _TranslationLogItemState extends State<TranslationLogItem>
           title,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: titleColor,
+            color: color,
             fontSize: 12,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppTheme.spacingSmall),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppTheme.spacingMedium),
           decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: borderColor),
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: SelectableText(
             content,
@@ -476,23 +333,10 @@ class _TranslationLogItemState extends State<TranslationLogItem>
   }
 
   Widget _buildInfoChip(String label, String value, {Color? color}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: (color ?? Colors.grey.shade600).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: (color ?? Colors.grey.shade600).withValues(alpha: 0.3),
-        ),
-      ),
-      child: Text(
-        '$label: $value',
-        style: TextStyle(
-          fontSize: 10,
-          color: color ?? Colors.grey.shade400,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+    return AppChip(
+      label: '$label: $value',
+      color: color ?? AppTheme.textDisabled,
+      fontSize: 10,
     );
   }
 
