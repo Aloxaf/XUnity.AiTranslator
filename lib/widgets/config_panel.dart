@@ -1,10 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
 import 'auto_save_mixin.dart';
 import 'common_widgets.dart';
+
+/// 自定义范围限制的TextInputFormatter
+class RangeTextInputFormatter extends TextInputFormatter {
+  final double min;
+  final double max;
+
+  RangeTextInputFormatter({required this.min, required this.max});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // 允许负号在开头
+    if (newValue.text == '-' && min < 0) {
+      return newValue;
+    }
+
+    // 允许小数点
+    if (newValue.text.endsWith('.') &&
+        !newValue.text.contains(RegExp(r'\..*\.'))) {
+      return newValue;
+    }
+
+    // 检查基本数字格式
+    final pattern = min < 0 ? r'^-?\d*\.?\d*$' : r'^\d*\.?\d*$';
+    if (!RegExp(pattern).hasMatch(newValue.text)) {
+      return oldValue;
+    }
+
+    // 如果是完整的数字，检查范围
+    final value = double.tryParse(newValue.text);
+    if (value != null) {
+      if (value < min || value > max) {
+        return oldValue;
+      }
+    }
+
+    return newValue;
+  }
+}
 
 class ConfigPanel extends ConsumerStatefulWidget {
   const ConfigPanel({super.key});
@@ -19,6 +65,11 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
   late TextEditingController _baseUrlController;
   late TextEditingController _apiKeyController;
   late TextEditingController _modelController;
+  late TextEditingController _temperatureController;
+  late TextEditingController _maxTokensController;
+  late TextEditingController _topPController;
+  late TextEditingController _frequencyPenaltyController;
+  late TextEditingController _presencePenaltyController;
 
   String _selectedProvider = 'OpenRouter';
 
@@ -34,13 +85,39 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
     'OpenRouter': {
       'baseUrl': 'https://openrouter.ai/api/v1',
       'model': 'google/gemini-2.0-flash-001',
+      'temperature': '0.3',
+      'maxTokens': '8192',
+      'topP': '1.0',
+      'frequencyPenalty': '0.0',
+      'presencePenalty': '0.0',
     },
-    'OpenAI': {'baseUrl': 'https://api.openai.com/v1', 'model': 'gpt-4.1-mini'},
+    'OpenAI': {
+      'baseUrl': 'https://api.openai.com/v1',
+      'model': 'gpt-4.1-mini',
+      'temperature': '0.3',
+      'maxTokens': '8192',
+      'topP': '1.0',
+      'frequencyPenalty': '0.0',
+      'presencePenalty': '0.0',
+    },
     'Azure OpenAI': {
       'baseUrl': 'https://your-resource.openai.azure.com',
       'model': 'gpt-4.1-mini',
+      'temperature': '0.3',
+      'maxTokens': '8192',
+      'topP': '1.0',
+      'frequencyPenalty': '0.0',
+      'presencePenalty': '0.0',
     },
-    '自定义': {'baseUrl': '', 'model': ''},
+    '自定义': {
+      'baseUrl': '',
+      'model': '',
+      'temperature': '0.3',
+      'maxTokens': '8192',
+      'topP': '1.0',
+      'frequencyPenalty': '0.0',
+      'presencePenalty': '0.0',
+    },
   };
 
   @override
@@ -64,6 +141,21 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
     _baseUrlController = TextEditingController(text: currentConfig.baseUrl);
     _apiKeyController = TextEditingController(text: currentConfig.apiKey);
     _modelController = TextEditingController(text: currentConfig.model);
+    _temperatureController = TextEditingController(
+      text: currentConfig.temperature.toString(),
+    );
+    _maxTokensController = TextEditingController(
+      text: currentConfig.maxTokens.toString(),
+    );
+    _topPController = TextEditingController(
+      text: currentConfig.topP.toString(),
+    );
+    _frequencyPenaltyController = TextEditingController(
+      text: currentConfig.frequencyPenalty.toString(),
+    );
+    _presencePenaltyController = TextEditingController(
+      text: currentConfig.presencePenalty.toString(),
+    );
     _selectedProvider = config.currentProvider;
   }
 
@@ -80,6 +172,14 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
         _apiKeyController.text = currentConfig.apiKey;
         _modelController.text = currentConfig.model;
         _selectedProvider = config.currentProvider;
+
+        _temperatureController.text = currentConfig.temperature.toString();
+        _maxTokensController.text = currentConfig.maxTokens.toString();
+        _topPController.text = currentConfig.topP.toString();
+        _frequencyPenaltyController.text = currentConfig.frequencyPenalty
+            .toString();
+        _presencePenaltyController.text = currentConfig.presencePenalty
+            .toString();
       });
 
       // 模型重新加载现在由ModelNotifier自动处理
@@ -88,11 +188,38 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
 
   @override
   TranslationConfig createUpdatedConfig(TranslationConfig currentConfig) {
+    // 验证并解析数值参数
+    double temperature;
+    int maxTokens;
+    double topP;
+    double frequencyPenalty;
+    double presencePenalty;
+
+    try {
+      temperature = double.parse(_temperatureController.text);
+      maxTokens = int.parse(_maxTokensController.text);
+      topP = double.parse(_topPController.text);
+      frequencyPenalty = double.parse(_frequencyPenaltyController.text);
+      presencePenalty = double.parse(_presencePenaltyController.text);
+    } catch (e) {
+      // 如果解析失败，使用默认值
+      temperature = 0.3;
+      maxTokens = 8192;
+      topP = 1.0;
+      frequencyPenalty = 0.0;
+      presencePenalty = 0.0;
+    }
+
     // 更新当前提供商的配置
     final updatedProviderConfig = LLMProviderConfig(
       baseUrl: _baseUrlController.text,
       apiKey: _apiKeyController.text,
       model: _modelController.text,
+      temperature: temperature,
+      maxTokens: maxTokens,
+      topP: topP,
+      frequencyPenalty: frequencyPenalty,
+      presencePenalty: presencePenalty,
     );
 
     return currentConfig
@@ -114,7 +241,12 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
         a.currentProvider == b.currentProvider &&
         aCurrentConfig.baseUrl == bCurrentConfig.baseUrl &&
         aCurrentConfig.apiKey == bCurrentConfig.apiKey &&
-        aCurrentConfig.model == bCurrentConfig.model;
+        aCurrentConfig.model == bCurrentConfig.model &&
+        aCurrentConfig.temperature == bCurrentConfig.temperature &&
+        aCurrentConfig.maxTokens == bCurrentConfig.maxTokens &&
+        aCurrentConfig.topP == bCurrentConfig.topP &&
+        aCurrentConfig.frequencyPenalty == bCurrentConfig.frequencyPenalty &&
+        aCurrentConfig.presencePenalty == bCurrentConfig.presencePenalty;
   }
 
   @override
@@ -124,17 +256,49 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
     _baseUrlController.dispose();
     _apiKeyController.dispose();
     _modelController.dispose();
+    _temperatureController.dispose();
+    _maxTokensController.dispose();
+    _topPController.dispose();
+    _frequencyPenaltyController.dispose();
+    _presencePenaltyController.dispose();
     super.dispose();
   }
 
   void _onProviderChanged(String? provider) {
     if (provider != null && provider != _selectedProvider) {
+      // 验证并解析数值参数
+      double temperature;
+      int maxTokens;
+      double topP;
+      double frequencyPenalty;
+      double presencePenalty;
+
+      try {
+        temperature = double.parse(_temperatureController.text);
+        maxTokens = int.parse(_maxTokensController.text);
+        topP = double.parse(_topPController.text);
+        frequencyPenalty = double.parse(_frequencyPenaltyController.text);
+        presencePenalty = double.parse(_presencePenaltyController.text);
+      } catch (e) {
+        // 如果解析失败，使用默认值
+        temperature = 0.3;
+        maxTokens = 8192;
+        topP = 1.0;
+        frequencyPenalty = 0.0;
+        presencePenalty = 0.0;
+      }
+
       // 先保存当前提供商的配置
       final currentConfig = ref.read(configProvider);
       final updatedCurrentProviderConfig = LLMProviderConfig(
         baseUrl: _baseUrlController.text,
         apiKey: _apiKeyController.text,
         model: _modelController.text,
+        temperature: temperature,
+        maxTokens: maxTokens,
+        topP: topP,
+        frequencyPenalty: frequencyPenalty,
+        presencePenalty: presencePenalty,
       );
 
       final configWithCurrentSaved = currentConfig.updateProviderConfig(
@@ -154,6 +318,11 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
           baseUrl: defaults['baseUrl']!,
           apiKey: targetConfig.apiKey, // 保留已设置的API密钥
           model: defaults['model']!,
+          temperature: double.parse(defaults['temperature']!),
+          maxTokens: int.parse(defaults['maxTokens']!),
+          topP: double.parse(defaults['topP']!),
+          frequencyPenalty: double.parse(defaults['frequencyPenalty']!),
+          presencePenalty: double.parse(defaults['presencePenalty']!),
         );
       }
 
@@ -162,6 +331,13 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
         _baseUrlController.text = targetConfig.baseUrl;
         _apiKeyController.text = targetConfig.apiKey;
         _modelController.text = targetConfig.model;
+        _temperatureController.text = targetConfig.temperature.toString();
+        _maxTokensController.text = targetConfig.maxTokens.toString();
+        _topPController.text = targetConfig.topP.toString();
+        _frequencyPenaltyController.text = targetConfig.frequencyPenalty
+            .toString();
+        _presencePenaltyController.text = targetConfig.presencePenalty
+            .toString();
       });
 
       // 保存配置
@@ -247,6 +423,130 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                   ),
                   const SizedBox(width: AppTheme.spacingLarge),
                   Expanded(child: _buildModelSelector()),
+                ],
+              ),
+              const SizedBox(height: AppTheme.spacingXXLarge),
+
+              // 高级参数配置 - 使用ExpansionTile实现折叠
+              ExpansionTile(
+                initiallyExpanded: false,
+                title: Row(
+                  children: [
+                    Icon(
+                      Icons.tune,
+                      color: AppTheme.primaryColor,
+                      size: AppTheme.iconSizeMedium,
+                    ),
+                    const SizedBox(width: AppTheme.spacingMedium),
+                    Text(
+                      '高级参数配置',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: AppTheme.spacingLarge,
+                      right: AppTheme.spacingLarge,
+                      bottom: AppTheme.spacingLarge,
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: buildAutoSaveTextField(
+                                controller: _temperatureController,
+                                label: 'Temperature',
+                                hint: '0.0-2.0，控制输出随机性',
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                inputFormatters: [
+                                  RangeTextInputFormatter(min: 0.0, max: 2.0),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: AppTheme.spacingLarge),
+                            Expanded(
+                              child: buildAutoSaveTextField(
+                                controller: _maxTokensController,
+                                label: 'Max Tokens',
+                                hint: '1-32768，最大生成令牌数',
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  RangeTextInputFormatter(min: 1, max: 32768),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: AppTheme.spacingLarge),
+                            Expanded(
+                              child: buildAutoSaveTextField(
+                                controller: _topPController,
+                                label: 'Top P',
+                                hint: '0.0-1.0，控制采样多样性',
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                inputFormatters: [
+                                  RangeTextInputFormatter(min: 0.0, max: 1.0),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppTheme.spacingLarge),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: buildAutoSaveTextField(
+                                controller: _frequencyPenaltyController,
+                                label: 'Frequency Penalty',
+                                hint: '-2.0到2.0，减少重复内容',
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                      signed: true,
+                                    ),
+                                inputFormatters: [
+                                  RangeTextInputFormatter(min: -2.0, max: 2.0),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: AppTheme.spacingLarge),
+                            Expanded(
+                              child: buildAutoSaveTextField(
+                                controller: _presencePenaltyController,
+                                label: 'Presence Penalty',
+                                hint: '-2.0到2.0，鼓励新话题',
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                      signed: true,
+                                    ),
+                                inputFormatters: [
+                                  RangeTextInputFormatter(min: -2.0, max: 2.0),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: AppTheme.spacingLarge),
+                            const Expanded(child: SizedBox()), // 占位符以保持对齐
+                          ],
+                        ),
+                        const SizedBox(height: AppTheme.spacingLarge),
+                        InfoBox.info(
+                          message:
+                              'Temperature 控制输出随机性，Top P 控制采样多样性，Penalty 参数用于减少重复和鼓励新内容',
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ],

@@ -56,6 +56,11 @@ LLMProviderConfig _$LLMProviderConfigFromJson(Map<String, dynamic> json) =>
       baseUrl: json['baseUrl'] as String? ?? '',
       apiKey: json['apiKey'] as String? ?? '',
       model: json['model'] as String? ?? '',
+      temperature: (json['temperature'] as num?)?.toDouble() ?? 0.3,
+      maxTokens: (json['maxTokens'] as num?)?.toInt() ?? 8192,
+      topP: (json['topP'] as num?)?.toDouble() ?? 1.0,
+      frequencyPenalty: (json['frequencyPenalty'] as num?)?.toDouble() ?? 0.0,
+      presencePenalty: (json['presencePenalty'] as num?)?.toDouble() ?? 0.0,
     );
 
 Map<String, dynamic> _$LLMProviderConfigToJson(LLMProviderConfig instance) =>
@@ -63,6 +68,11 @@ Map<String, dynamic> _$LLMProviderConfigToJson(LLMProviderConfig instance) =>
       'baseUrl': instance.baseUrl,
       'apiKey': instance.apiKey,
       'model': instance.model,
+      'temperature': instance.temperature,
+      'maxTokens': instance.maxTokens,
+      'topP': instance.topP,
+      'frequencyPenalty': instance.frequencyPenalty,
+      'presencePenalty': instance.presencePenalty,
     };
 
 LLMServiceConfig _$LLMServiceConfigFromJson(Map<String, dynamic> json) =>
@@ -71,6 +81,11 @@ LLMServiceConfig _$LLMServiceConfigFromJson(Map<String, dynamic> json) =>
       baseUrl: json['baseUrl'] as String? ?? 'https://openrouter.ai/api/v1',
       apiKey: json['apiKey'] as String? ?? '',
       model: json['model'] as String? ?? 'google/gemini-2.0-flash-001',
+      temperature: (json['temperature'] as num?)?.toDouble() ?? 0.3,
+      maxTokens: (json['maxTokens'] as num?)?.toInt() ?? 8192,
+      topP: (json['topP'] as num?)?.toDouble() ?? 1.0,
+      frequencyPenalty: (json['frequencyPenalty'] as num?)?.toDouble() ?? 0.0,
+      presencePenalty: (json['presencePenalty'] as num?)?.toDouble() ?? 0.0,
     );
 
 Map<String, dynamic> _$LLMServiceConfigToJson(LLMServiceConfig instance) =>
@@ -79,6 +94,11 @@ Map<String, dynamic> _$LLMServiceConfigToJson(LLMServiceConfig instance) =>
       'baseUrl': instance.baseUrl,
       'apiKey': instance.apiKey,
       'model': instance.model,
+      'temperature': instance.temperature,
+      'maxTokens': instance.maxTokens,
+      'topP': instance.topP,
+      'frequencyPenalty': instance.frequencyPenalty,
+      'presencePenalty': instance.presencePenalty,
     };
 
 TranslationLog _$TranslationLogFromJson(Map<String, dynamic> json) =>

@@ -58,6 +58,11 @@ class TranslationConfig {
       baseUrl: currentConfig.baseUrl,
       apiKey: currentConfig.apiKey,
       model: currentConfig.model,
+      temperature: currentConfig.temperature,
+      maxTokens: currentConfig.maxTokens,
+      topP: currentConfig.topP,
+      frequencyPenalty: currentConfig.frequencyPenalty,
+      presencePenalty: currentConfig.presencePenalty,
     );
   }
 
@@ -101,11 +106,21 @@ class LLMProviderConfig {
   final String baseUrl;
   final String apiKey;
   final String model;
+  final double temperature;
+  final int maxTokens;
+  final double topP;
+  final double frequencyPenalty;
+  final double presencePenalty;
 
   const LLMProviderConfig({
     this.baseUrl = '',
     this.apiKey = '',
     this.model = '',
+    this.temperature = 0.3,
+    this.maxTokens = 8192,
+    this.topP = 1.0,
+    this.frequencyPenalty = 0.0,
+    this.presencePenalty = 0.0,
   });
 
   factory LLMProviderConfig.fromJson(Map<String, dynamic> json) =>
@@ -113,11 +128,25 @@ class LLMProviderConfig {
 
   Map<String, dynamic> toJson() => _$LLMProviderConfigToJson(this);
 
-  LLMProviderConfig copyWith({String? baseUrl, String? apiKey, String? model}) {
+  LLMProviderConfig copyWith({
+    String? baseUrl,
+    String? apiKey,
+    String? model,
+    double? temperature,
+    int? maxTokens,
+    double? topP,
+    double? frequencyPenalty,
+    double? presencePenalty,
+  }) {
     return LLMProviderConfig(
       baseUrl: baseUrl ?? this.baseUrl,
       apiKey: apiKey ?? this.apiKey,
       model: model ?? this.model,
+      temperature: temperature ?? this.temperature,
+      maxTokens: maxTokens ?? this.maxTokens,
+      topP: topP ?? this.topP,
+      frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
+      presencePenalty: presencePenalty ?? this.presencePenalty,
     );
   }
 }
@@ -129,12 +158,22 @@ class LLMServiceConfig {
   final String baseUrl;
   final String apiKey;
   final String model;
+  final double temperature;
+  final int maxTokens;
+  final double topP;
+  final double frequencyPenalty;
+  final double presencePenalty;
 
   const LLMServiceConfig({
     this.provider = 'OpenRouter',
     this.baseUrl = 'https://openrouter.ai/api/v1',
     this.apiKey = '',
     this.model = 'google/gemini-2.0-flash-001',
+    this.temperature = 0.3,
+    this.maxTokens = 8192,
+    this.topP = 1.0,
+    this.frequencyPenalty = 0.0,
+    this.presencePenalty = 0.0,
   });
 
   factory LLMServiceConfig.fromJson(Map<String, dynamic> json) =>
@@ -147,12 +186,22 @@ class LLMServiceConfig {
     String? baseUrl,
     String? apiKey,
     String? model,
+    double? temperature,
+    int? maxTokens,
+    double? topP,
+    double? frequencyPenalty,
+    double? presencePenalty,
   }) {
     return LLMServiceConfig(
       provider: provider ?? this.provider,
       baseUrl: baseUrl ?? this.baseUrl,
       apiKey: apiKey ?? this.apiKey,
       model: model ?? this.model,
+      temperature: temperature ?? this.temperature,
+      maxTokens: maxTokens ?? this.maxTokens,
+      topP: topP ?? this.topP,
+      frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
+      presencePenalty: presencePenalty ?? this.presencePenalty,
     );
   }
 }

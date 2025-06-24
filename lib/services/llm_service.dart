@@ -200,17 +200,22 @@ class LLMService {
       });
     }
 
+    final requestData = {
+      'model': config.model,
+      'messages': [
+        {'role': 'user', 'content': prompt},
+      ],
+      'max_tokens': config.maxTokens,
+      'temperature': config.temperature,
+      'top_p': config.topP,
+      'frequency_penalty': config.frequencyPenalty,
+      'presence_penalty': config.presencePenalty,
+    };
+
     return await _dio.post(
       '${config.baseUrl}/chat/completions',
       options: Options(headers: headers),
-      data: {
-        'model': config.model,
-        'messages': [
-          {'role': 'user', 'content': prompt},
-        ],
-        'max_tokens': 1000,
-        'temperature': 0.3,
-      },
+      data: requestData,
     );
   }
 
