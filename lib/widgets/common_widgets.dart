@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
+import '../services/llm_service.dart';
 
 /// 通用卡片容器
 class AppCard extends StatelessWidget {
@@ -576,6 +577,438 @@ class EmptyState extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// 通用的带搜索功能的下拉选择组件
+class SearchableDropdown<T> extends StatefulWidget {
+  final String? value;
+  final List<T> items;
+  final bool isLoading;
+  final String? error;
+  final void Function(String) onSelected;
+  final VoidCallback? onRefresh;
+  final String label;
+  final String hint;
+  final String Function(T) getItemId;
+  final String Function(T) getItemName;
+  final String? Function(T)? getItemDescription;
+  final bool Function(T, String)? customFilter;
+
+  const SearchableDropdown({
+    super.key,
+    required this.value,
+    required this.items,
+    required this.onSelected,
+    required this.getItemId,
+    required this.getItemName,
+    this.isLoading = false,
+    this.error,
+    this.onRefresh,
+    this.label = '选择项',
+    this.hint = '选择或输入',
+    this.getItemDescription,
+    this.customFilter,
+  });
+
+  @override
+  State<SearchableDropdown<T>> createState() => _SearchableDropdownState<T>();
+}
+
+class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink();
+  List<T> _filteredItems = [];
+  bool _showDropdown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value ?? '');
+    _focusNode = FocusNode();
+    _filteredItems = widget.items;
+
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        _showDropdown = true;
+        _showOverlay();
+      } else {
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted && !_focusNode.hasFocus) {
+            _hideOverlay();
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(SearchableDropdown<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.items != widget.items) {
+      _filteredItems = widget.items;
+      // 延迟执行过滤操作，避免在构建期间调用setState
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _filterItems(_controller.text);
+        }
+      });
+    }
+    if (oldWidget.value != widget.value && widget.value != _controller.text) {
+      _controller.text = widget.value ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideOverlay();
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _filterItems(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredItems = widget.items;
+      } else {
+        _filteredItems = widget.items.where((item) {
+          if (widget.customFilter != null) {
+            return widget.customFilter!(item, query);
+          }
+          final id = widget.getItemId(item).toLowerCase();
+          final name = widget.getItemName(item).toLowerCase();
+          final queryLower = query.toLowerCase();
+          return id.contains(queryLower) || name.contains(queryLower);
+        }).toList();
+      }
+    });
+
+    // 延迟更新overlay，避免在构建期间调用markNeedsBuild
+    if (_showDropdown && _overlayEntry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _overlayEntry != null) {
+          _overlayEntry!.markNeedsBuild();
+        }
+      });
+    }
+  }
+
+  void _showOverlay() {
+    if (_overlayEntry != null) return;
+
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final size = renderBox?.size;
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        width: size?.width,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: const Offset(0, 56),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                border: Border.all(color: Colors.grey.shade700),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: _buildDropdownContent(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    _showDropdown = false;
+  }
+
+  Widget _buildDropdownContent() {
+    if (widget.isLoading) {
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.spacingXLarge),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppTheme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppTheme.spacingMedium),
+            const Text('加载中...', style: TextStyle(fontSize: 14)),
+          ],
+        ),
+      );
+    }
+
+    if (widget.error != null) {
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.spacingXLarge),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.error_outline, color: AppTheme.errorColor, size: 16),
+                const SizedBox(width: AppTheme.spacingMedium),
+                Expanded(
+                  child: Text(
+                    widget.error!,
+                    style: TextStyle(fontSize: 14, color: AppTheme.errorColor),
+                  ),
+                ),
+              ],
+            ),
+            if (widget.onRefresh != null) ...[
+              const SizedBox(height: AppTheme.spacingMedium),
+              TextButton.icon(
+                onPressed: widget.onRefresh,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('重试'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    if (_filteredItems.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.spacingXLarge),
+        child: Text(
+          _controller.text.isEmpty ? '没有可用的选项' : '未找到匹配的选项',
+          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSmall),
+      itemCount: _filteredItems.length,
+      itemBuilder: (context, index) {
+        final item = _filteredItems[index];
+        final itemId = widget.getItemId(item);
+        final isSelected = itemId == widget.value;
+
+        return InkWell(
+          onTap: () {
+            _controller.text = itemId;
+            widget.onSelected(itemId);
+            // 延迟失去焦点，确保选择操作完成
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                _focusNode.unfocus();
+              }
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacingLarge,
+              vertical: AppTheme.spacingMedium,
+            ),
+            color: isSelected
+                ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.getItemName(item),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : AppTheme.textPrimary,
+                  ),
+                ),
+                if (widget.getItemDescription != null) ...[
+                  () {
+                    final description = widget.getItemDescription!(item);
+                    if (description != null && description.isNotEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: AppTheme.spacingXSmall),
+                          Text(
+                            description,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }(),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.label,
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingSmall),
+        CompositedTransformTarget(
+          link: _layerLink,
+          child: TextFormField(
+            controller: _controller,
+            focusNode: _focusNode,
+            onChanged: _filterItems,
+            onFieldSubmitted: (value) {
+              if (value.isNotEmpty) {
+                widget.onSelected(value);
+              }
+            },
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              hintStyle: TextStyle(color: AppTheme.textDisabled),
+              filled: true,
+              fillColor: AppTheme.surfaceColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                borderSide: BorderSide(color: Colors.grey.shade700),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                borderSide: BorderSide(color: Colors.grey.shade700),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                borderSide: BorderSide(color: AppTheme.primaryColor),
+              ),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        right: AppTheme.spacingMedium,
+                      ),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (widget.onRefresh != null)
+                    IconButton(
+                      onPressed: widget.onRefresh,
+                      icon: Icon(
+                        Icons.refresh,
+                        size: 18,
+                        color: AppTheme.textSecondary,
+                      ),
+                      tooltip: '刷新列表',
+                    ),
+                  Icon(
+                    _showDropdown
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: AppTheme.textSecondary,
+                  ),
+                  const SizedBox(width: AppTheme.spacingSmall),
+                ],
+              ),
+            ),
+            style: TextStyle(color: AppTheme.textPrimary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 带搜索功能的模型选择组件（基于通用组件）
+class SearchableModelDropdown extends StatelessWidget {
+  final String? value;
+  final List<ModelInfo> models;
+  final bool isLoading;
+  final String? error;
+  final void Function(String) onModelSelected;
+  final VoidCallback? onRefresh;
+  final String label;
+  final String hint;
+
+  const SearchableModelDropdown({
+    super.key,
+    required this.value,
+    required this.models,
+    required this.onModelSelected,
+    this.isLoading = false,
+    this.error,
+    this.onRefresh,
+    this.label = '模型',
+    this.hint = '选择或输入模型名称',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SearchableDropdown<ModelInfo>(
+      value: value,
+      items: models,
+      isLoading: isLoading,
+      error: error,
+      onSelected: onModelSelected,
+      onRefresh: onRefresh,
+      label: label,
+      hint: hint,
+      getItemId: (model) => model.id,
+      getItemName: (model) => model.name,
+      getItemDescription: (model) => model.description,
     );
   }
 }

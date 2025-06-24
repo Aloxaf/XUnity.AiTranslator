@@ -313,3 +313,129 @@ class ServerStateNotifier extends StateNotifier<ServerState> {
     }
   }
 }
+
+// 模型管理提供者
+final modelProvider =
+    StateNotifierProvider.family<ModelNotifier, ModelState, String>((
+      ref,
+      provider,
+    ) {
+      final llmService = ref.watch(llmServiceProvider);
+      final config = ref.read(configProvider);
+      final notifier = ModelNotifier(llmService, provider);
+
+      // 设置初始配置
+      notifier.updateConfig(config);
+
+      // 监听配置变化并自动更新模型
+      ref.listen<TranslationConfig>(configProvider, (previous, next) {
+        if (previous != next) {
+          notifier.updateConfig(next);
+        }
+      });
+
+      return notifier;
+    });
+
+class ModelState {
+  final List<ModelInfo> models;
+  final bool isLoading;
+  final String? error;
+
+  const ModelState({
+    this.models = const [],
+    this.isLoading = false,
+    this.error,
+  });
+
+  ModelState copyWith({
+    List<ModelInfo>? models,
+    bool? isLoading,
+    String? error,
+  }) {
+    return ModelState(
+      models: models ?? this.models,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+class ModelNotifier extends StateNotifier<ModelState> {
+  final LLMService _llmService;
+  final String _provider;
+  TranslationConfig? _config;
+
+  ModelNotifier(this._llmService, this._provider) : super(const ModelState());
+
+  void updateConfig(TranslationConfig config) {
+    final previousConfig = _config;
+    _config = config;
+
+    // 检查是否需要重新加载模型
+    final currentProviderConfig = config.llmProviders[_provider];
+    final previousProviderConfig = previousConfig?.llmProviders[_provider];
+
+    // 如果API密钥或基础URL发生变化，重新加载模型
+    if (currentProviderConfig != null &&
+        (previousProviderConfig?.apiKey != currentProviderConfig.apiKey ||
+            previousProviderConfig?.baseUrl != currentProviderConfig.baseUrl)) {
+      if (currentProviderConfig.apiKey.isNotEmpty) {
+        // 清除缓存并重新加载
+        _llmService.clearModelCache(_provider);
+        loadModels();
+      } else {
+        // API密钥为空，清空模型列表
+        if (mounted) {
+          state = state.copyWith(models: [], error: 'API密钥未配置');
+        }
+      }
+    }
+  }
+
+  Future<void> loadModels() async {
+    if (state.isLoading || _config == null) return;
+
+    final providerConfig = _config!.llmProviders[_provider];
+    if (providerConfig == null || providerConfig.apiKey.isEmpty) {
+      if (mounted) {
+        state = state.copyWith(error: 'API密钥未配置', isLoading: false);
+      }
+      return;
+    }
+
+    if (mounted) {
+      state = state.copyWith(isLoading: true, error: null);
+    }
+
+    try {
+      final llmServiceConfig = LLMServiceConfig(
+        provider: _provider,
+        baseUrl: providerConfig.baseUrl,
+        apiKey: providerConfig.apiKey,
+        model: providerConfig.model,
+      );
+
+      final models = await _llmService.getModels(llmServiceConfig);
+
+      if (mounted) {
+        state = state.copyWith(models: models, isLoading: false, error: null);
+      }
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
+    }
+  }
+
+  void clearError() {
+    if (mounted) {
+      state = state.copyWith(error: null);
+    }
+  }
+
+  void refreshModels() {
+    _llmService.clearModelCache(_provider);
+    loadModels();
+  }
+}

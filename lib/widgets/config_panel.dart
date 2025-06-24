@@ -70,16 +70,19 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
   @override
   void onConfigChanged(TranslationConfig config) {
     if (mounted && !isUserEditing) {
+      final currentConfig = config.currentLLMConfig;
+
       setState(() {
         _promptController.text = config.promptTemplate;
         _regexController.text = config.outputRegex;
 
-        final currentConfig = config.currentLLMConfig;
         _baseUrlController.text = currentConfig.baseUrl;
         _apiKeyController.text = currentConfig.apiKey;
         _modelController.text = currentConfig.model;
         _selectedProvider = config.currentProvider;
       });
+
+      // 模型重新加载现在由ModelNotifier自动处理
     }
   }
 
@@ -170,6 +173,32 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
     }
   }
 
+  void _onModelSelected(String model) {
+    if (_modelController.text != model) {
+      _modelController.text = model;
+
+      // 触发自动保存
+      scheduleAutoSave();
+    }
+  }
+
+  Widget _buildModelSelector() {
+    final modelState = ref.watch(modelProvider(_selectedProvider));
+
+    return SearchableModelDropdown(
+      value: _modelController.text,
+      models: modelState.models,
+      isLoading: modelState.isLoading,
+      error: modelState.error,
+      onModelSelected: _onModelSelected,
+      onRefresh: () {
+        ref.read(modelProvider(_selectedProvider).notifier).refreshModels();
+      },
+      label: '模型',
+      hint: '选择或输入模型名称',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 设置配置监听器
@@ -189,11 +218,14 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
             children: [
               CardHeader(title: 'LLM 服务配置', icon: Icons.psychology),
               const SizedBox(height: AppTheme.spacingXLarge),
-              _buildDropdownField(
+              SearchableDropdown<String>(
                 label: 'LLM 服务提供商',
                 value: _selectedProvider,
                 items: _providers,
-                onChanged: _onProviderChanged,
+                onSelected: (value) => _onProviderChanged(value),
+                getItemId: (item) => item,
+                getItemName: (item) => item,
+                hint: '选择服务提供商',
               ),
               const SizedBox(height: AppTheme.spacingLarge),
               buildAutoSaveTextField(
@@ -214,13 +246,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                     ),
                   ),
                   const SizedBox(width: AppTheme.spacingLarge),
-                  Expanded(
-                    child: buildAutoSaveTextField(
-                      controller: _modelController,
-                      label: '模型',
-                      hint: 'gpt-4',
-                    ),
-                  ),
+                  Expanded(child: _buildModelSelector()),
                 ],
               ),
             ],
@@ -254,50 +280,6 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                 message: '提示词模板支持变量：{from} 源语言，{to} 目标语言，{text} 待翻译文本',
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String value,
-    required List<String> items,
-    required void Function(String?) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: AppTheme.spacingSmall),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingLarge,
-          ),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-            border: Border.all(color: Colors.grey.shade700),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              dropdownColor: AppTheme.surfaceColor,
-              style: TextStyle(color: AppTheme.textPrimary),
-              items: items.map((item) {
-                return DropdownMenuItem(value: item, child: Text(item));
-              }).toList(),
-              onChanged: onChanged,
-            ),
           ),
         ),
       ],

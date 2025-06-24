@@ -5,6 +5,7 @@ import '../models/translation_config.dart';
 class LLMService {
   final Dio _dio;
   final Logger _logger = Logger();
+  static final Map<String, List<ModelInfo>> _modelCache = {};
 
   LLMService() : _dio = _configureDio();
 
@@ -28,6 +29,111 @@ class LLMService {
     );
 
     return dio;
+  }
+
+  Future<List<ModelInfo>> getModels(LLMServiceConfig config) async {
+    final cacheKey = '${config.provider}_${config.baseUrl}';
+
+    // 检查缓存
+    if (_modelCache.containsKey(cacheKey)) {
+      return _modelCache[cacheKey]!;
+    }
+
+    if (config.apiKey.isEmpty) {
+      throw ArgumentError('API key is required to fetch models');
+    }
+
+    try {
+      final headers = <String, String>{
+        'Authorization': 'Bearer ${config.apiKey}',
+        'Content-Type': 'application/json',
+      };
+
+      if (config.provider == 'OpenRouter') {
+        headers.addAll({
+          'HTTP-Referer': 'https://github.com/Aloxaf/XUnity.AiTranslator',
+          'X-Title': 'XUnity AI Translator',
+        });
+      }
+
+      final response = await _dio.get(
+        '${config.baseUrl}/models',
+        options: Options(headers: headers),
+      );
+
+      final models = _parseModelsResponse(response.data, config.provider);
+
+      // 缓存结果
+      _modelCache[cacheKey] = models;
+
+      _logger.i(
+        'Successfully fetched ${models.length} models for ${config.provider}',
+      );
+      return models;
+    } on DioException catch (e) {
+      _logger.e('Failed to fetch models: ${e.message}');
+      throw ModelFetchException('Failed to fetch models: ${e.message}');
+    } catch (e) {
+      _logger.e('Unexpected error fetching models: $e');
+      throw ModelFetchException('Unexpected error: ${e.toString()}');
+    }
+  }
+
+  List<ModelInfo> _parseModelsResponse(dynamic data, String provider) {
+    if (data == null || data is! Map<String, dynamic>) {
+      throw ModelFetchException('Invalid response format');
+    }
+
+    final modelsData = data['data'] as List?;
+    if (modelsData == null) {
+      throw ModelFetchException('No models data in response');
+    }
+
+    final models = <ModelInfo>[];
+    for (final modelData in modelsData) {
+      if (modelData is Map<String, dynamic>) {
+        try {
+          final modelInfo = ModelInfo.fromJson(modelData);
+          // 过滤掉一些不适合翻译的模型
+          if (_isTranslationCapableModel(modelInfo)) {
+            models.add(modelInfo);
+          }
+        } catch (e) {
+          _logger.w('Failed to parse model data: $e');
+          continue;
+        }
+      }
+    }
+
+    // 按名称排序
+    models.sort((a, b) => a.id.compareTo(b.id));
+    return models;
+  }
+
+  bool _isTranslationCapableModel(ModelInfo model) {
+    // 过滤掉明显不适合翻译的模型
+    final id = model.id.toLowerCase();
+
+    // 排除图像、音频、嵌入模型
+    if (id.contains('vision') ||
+        id.contains('audio') ||
+        id.contains('whisper') ||
+        id.contains('embedding') ||
+        id.contains('tts') ||
+        id.contains('dall-e') ||
+        id.contains('moderation')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void clearModelCache([String? provider]) {
+    if (provider != null) {
+      _modelCache.removeWhere((key, value) => key.startsWith(provider));
+    } else {
+      _modelCache.clear();
+    }
   }
 
   Future<String> translate({
@@ -89,7 +195,7 @@ class LLMService {
 
     if (config.provider == 'OpenRouter') {
       headers.addAll({
-        'HTTP-Referer': 'https://github.com/your-username/xunity-ai-translator',
+        'HTTP-Referer': 'https://github.com/Aloxaf/XUnity.AiTranslator',
         'X-Title': 'XUnity AI Translator',
       });
     }
@@ -174,4 +280,38 @@ class TranslationException implements Exception {
 
   @override
   String toString() => 'TranslationException: $message';
+}
+
+class ModelInfo {
+  final String id;
+  final String? displayName;
+  final String? description;
+  final List<String>? tags;
+
+  const ModelInfo({
+    required this.id,
+    this.displayName,
+    this.description,
+    this.tags,
+  });
+
+  factory ModelInfo.fromJson(Map<String, dynamic> json) {
+    return ModelInfo(
+      id: json['id'] as String,
+      displayName: json['name'] as String? ?? json['id'] as String,
+      description: json['description'] as String?,
+      tags: (json['tags'] as List?)?.cast<String>(),
+    );
+  }
+
+  String get name => displayName ?? id;
+}
+
+class ModelFetchException implements Exception {
+  final String message;
+
+  const ModelFetchException(this.message);
+
+  @override
+  String toString() => 'ModelFetchException: $message';
 }
