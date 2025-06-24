@@ -16,7 +16,7 @@ class ConfigNotifier extends StateNotifier<TranslationConfig> {
   static const String _configKey = 'translation_config';
   bool _isLoading = false;
 
-  ConfigNotifier() : super(const TranslationConfig()) {
+  ConfigNotifier() : super(TranslationConfig.defaultConfig()) {
     _loadConfig();
   }
 
@@ -409,14 +409,10 @@ class ModelNotifier extends StateNotifier<ModelState> {
     }
 
     try {
-      final llmServiceConfig = LLMServiceConfig(
+      final models = await _llmService.getModels(
         provider: _provider,
-        baseUrl: providerConfig.baseUrl,
-        apiKey: providerConfig.apiKey,
-        model: providerConfig.model,
+        config: providerConfig,
       );
-
-      final models = await _llmService.getModels(llmServiceConfig);
 
       if (mounted) {
         state = state.copyWith(models: models, isLoading: false, error: null);

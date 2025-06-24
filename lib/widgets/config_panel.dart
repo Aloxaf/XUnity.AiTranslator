@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:xunity_ai_translator/services/llm_service.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
@@ -52,6 +53,25 @@ class RangeTextInputFormatter extends TextInputFormatter {
   }
 }
 
+/// API 基础 URL 输入验证器
+class BaseUrlTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // 如果文本以 / 结尾，移除末尾的 /
+    if (newValue.text.endsWith('/') && newValue.text.length > 1) {
+      return TextEditingValue(
+        text: newValue.text.substring(0, newValue.text.length - 1),
+        selection: TextSelection.collapsed(offset: newValue.text.length - 1),
+      );
+    }
+
+    return newValue;
+  }
+}
+
 class ConfigPanel extends ConsumerStatefulWidget {
   const ConfigPanel({super.key});
 
@@ -73,58 +93,11 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
 
   String _selectedProvider = 'OpenRouter';
 
-  final List<String> _providers = [
-    'OpenRouter',
-    'OpenAI',
-    'Azure OpenAI',
-    '自定义',
-  ];
-
-  // 默认配置模板，仅在用户首次切换到某个提供商时使用
-  final Map<String, Map<String, String>> _providerDefaults = {
-    'OpenRouter': {
-      'baseUrl': 'https://openrouter.ai/api/v1',
-      'model': 'google/gemini-2.0-flash-001',
-      'temperature': '0.3',
-      'maxTokens': '8192',
-      'topP': '1.0',
-      'frequencyPenalty': '0.0',
-      'presencePenalty': '0.0',
-    },
-    'OpenAI': {
-      'baseUrl': 'https://api.openai.com/v1',
-      'model': 'gpt-4.1-mini',
-      'temperature': '0.3',
-      'maxTokens': '8192',
-      'topP': '1.0',
-      'frequencyPenalty': '0.0',
-      'presencePenalty': '0.0',
-    },
-    'Azure OpenAI': {
-      'baseUrl': 'https://your-resource.openai.azure.com',
-      'model': 'gpt-4.1-mini',
-      'temperature': '0.3',
-      'maxTokens': '8192',
-      'topP': '1.0',
-      'frequencyPenalty': '0.0',
-      'presencePenalty': '0.0',
-    },
-    '自定义': {
-      'baseUrl': '',
-      'model': '',
-      'temperature': '0.3',
-      'maxTokens': '8192',
-      'topP': '1.0',
-      'frequencyPenalty': '0.0',
-      'presencePenalty': '0.0',
-    },
-  };
-
   @override
   void initState() {
     super.initState();
     // 使用默认配置初始化控制器
-    _initControllers(const TranslationConfig());
+    _initControllers(TranslationConfig.defaultConfig());
 
     // 延迟加载实际配置
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -313,17 +286,9 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
 
       // 如果目标提供商的配置是空的（首次切换），使用默认配置
       if (targetConfig.baseUrl.isEmpty && targetConfig.model.isEmpty) {
-        final defaults = _providerDefaults[provider]!;
-        targetConfig = LLMProviderConfig(
-          baseUrl: defaults['baseUrl']!,
-          apiKey: targetConfig.apiKey, // 保留已设置的API密钥
-          model: defaults['model']!,
-          temperature: double.parse(defaults['temperature']!),
-          maxTokens: int.parse(defaults['maxTokens']!),
-          topP: double.parse(defaults['topP']!),
-          frequencyPenalty: double.parse(defaults['frequencyPenalty']!),
-          presencePenalty: double.parse(defaults['presencePenalty']!),
-        );
+        targetConfig = ProviderDefinitions.getDefaultConfig(
+          provider,
+        ).copyWith(apiKey: targetConfig.apiKey); // 保留已设置的API密钥
       }
 
       setState(() {
@@ -361,17 +326,32 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
   Widget _buildModelSelector() {
     final modelState = ref.watch(modelProvider(_selectedProvider));
 
-    return SearchableModelDropdown(
+    return SearchableDropdown<ModelInfo>(
       value: _modelController.text,
-      models: modelState.models,
+      items: modelState.models,
       isLoading: modelState.isLoading,
       error: modelState.error,
-      onModelSelected: _onModelSelected,
+      onSelected: _onModelSelected,
       onRefresh: () {
         ref.read(modelProvider(_selectedProvider).notifier).refreshModels();
       },
       label: '模型',
       hint: '选择或输入模型名称',
+      getItemId: (model) => model.id,
+      getItemName: (model) => model.name,
+      getItemDescription: (model) => model.description,
+    );
+  }
+
+  Widget _buildProviderSelector() {
+    return SimpleDropdown<String>(
+      value: _selectedProvider,
+      items: ProviderDefinitions.providerNames,
+      onSelected: (value) => _onProviderChanged(value),
+      getItemId: (item) => item,
+      getItemName: (item) => item,
+      label: 'LLM 服务提供商',
+      hint: '选择服务提供商',
     );
   }
 
@@ -394,20 +374,13 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
             children: [
               CardHeader(title: 'LLM 服务配置', icon: Icons.psychology),
               const SizedBox(height: AppTheme.spacingXLarge),
-              SearchableDropdown<String>(
-                label: 'LLM 服务提供商',
-                value: _selectedProvider,
-                items: _providers,
-                onSelected: (value) => _onProviderChanged(value),
-                getItemId: (item) => item,
-                getItemName: (item) => item,
-                hint: '选择服务提供商',
-              ),
+              _buildProviderSelector(),
               const SizedBox(height: AppTheme.spacingLarge),
               buildAutoSaveTextField(
                 controller: _baseUrlController,
                 label: 'API 基础 URL',
                 hint: 'https://openrouter.ai/api/v1',
+                inputFormatters: [BaseUrlTextInputFormatter()],
               ),
               const SizedBox(height: AppTheme.spacingLarge),
               Row(

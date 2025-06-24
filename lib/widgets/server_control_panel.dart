@@ -23,7 +23,7 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
   void initState() {
     super.initState();
     // 使用默认配置初始化控制器
-    _initControllers(const TranslationConfig());
+    _initControllers(TranslationConfig.defaultConfig());
 
     // 延迟加载实际配置
     WidgetsBinding.instance.addPostFrameCallback((_) {

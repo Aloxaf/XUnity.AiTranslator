@@ -31,8 +31,11 @@ class LLMService {
     return dio;
   }
 
-  Future<List<ModelInfo>> getModels(LLMServiceConfig config) async {
-    final cacheKey = '${config.provider}_${config.baseUrl}';
+  Future<List<ModelInfo>> getModels({
+    required String provider,
+    required LLMProviderConfig config,
+  }) async {
+    final cacheKey = '${provider}_${config.baseUrl}';
 
     // 检查缓存
     if (_modelCache.containsKey(cacheKey)) {
@@ -49,7 +52,7 @@ class LLMService {
         'Content-Type': 'application/json',
       };
 
-      if (config.provider == 'OpenRouter') {
+      if (provider == 'OpenRouter') {
         headers.addAll({
           'HTTP-Referer': 'https://github.com/Aloxaf/XUnity.AiTranslator',
           'X-Title': 'XUnity AI Translator',
@@ -61,14 +64,12 @@ class LLMService {
         options: Options(headers: headers),
       );
 
-      final models = _parseModelsResponse(response.data, config.provider);
+      final models = _parseModelsResponse(response.data, provider);
 
       // 缓存结果
       _modelCache[cacheKey] = models;
 
-      _logger.i(
-        'Successfully fetched ${models.length} models for ${config.provider}',
-      );
+      _logger.i('Successfully fetched ${models.length} models for $provider');
       return models;
     } on DioException catch (e) {
       _logger.e('Failed to fetch models: ${e.message}');
@@ -140,7 +141,8 @@ class LLMService {
     required String text,
     required String from,
     required String to,
-    required LLMServiceConfig config,
+    required String provider,
+    required LLMProviderConfig config,
     required String promptTemplate,
     required String outputRegex,
   }) async {
@@ -160,7 +162,7 @@ class LLMService {
         text: text,
       );
 
-      final response = await _makeRequest(config, prompt);
+      final response = await _makeRequest(provider, config, prompt);
       final content = _extractContent(response);
       final translatedText = _extractTranslation(content, outputRegex);
 
@@ -187,13 +189,17 @@ class LLMService {
         .replaceAll('{text}', text);
   }
 
-  Future<Response> _makeRequest(LLMServiceConfig config, String prompt) async {
+  Future<Response> _makeRequest(
+    String provider,
+    LLMProviderConfig config,
+    String prompt,
+  ) async {
     final headers = <String, String>{
       'Authorization': 'Bearer ${config.apiKey}',
       'Content-Type': 'application/json',
     };
 
-    if (config.provider == 'OpenRouter') {
+    if (provider == 'OpenRouter') {
       headers.addAll({
         'HTTP-Referer': 'https://github.com/Aloxaf/XUnity.AiTranslator',
         'X-Title': 'XUnity AI Translator',

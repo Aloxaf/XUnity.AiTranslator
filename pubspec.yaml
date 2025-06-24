@@ -60,6 +60,11 @@ dependencies:
   # 日志
   logger: ^2.0.2+1
 
+  # 表单
+  flutter_form_builder: ^10.0.1
+  form_builder_validators: ^11.2.0
+  form_builder_extra_fields: ^12.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

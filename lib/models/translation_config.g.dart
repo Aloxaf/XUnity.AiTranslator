@@ -6,40 +6,20 @@ part of 'translation_config.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-TranslationConfig _$TranslationConfigFromJson(
-  Map<String, dynamic> json,
-) => TranslationConfig(
-  serverPort: (json['serverPort'] as num?)?.toInt() ?? 8080,
-  promptTemplate:
-      json['promptTemplate'] as String? ??
-      'Translate the following text from {from} to {to}:\n\n{text}\n\nTranslation:',
-  outputRegex: json['outputRegex'] as String? ?? r'Translation:\s*(.+)',
-  concurrency: (json['concurrency'] as num?)?.toInt() ?? 3,
-  currentProvider: json['currentProvider'] as String? ?? 'OpenRouter',
-  llmProviders:
-      (json['llmProviders'] as Map<String, dynamic>?)?.map(
+TranslationConfig _$TranslationConfigFromJson(Map<String, dynamic> json) =>
+    TranslationConfig(
+      serverPort: (json['serverPort'] as num?)?.toInt() ?? 8080,
+      promptTemplate:
+          json['promptTemplate'] as String? ??
+          'Translate the following text from {from} to {to}:\n{text}',
+      outputRegex: json['outputRegex'] as String? ?? r'.+',
+      concurrency: (json['concurrency'] as num?)?.toInt() ?? 3,
+      currentProvider: json['currentProvider'] as String? ?? 'OpenRouter',
+      llmProviders: (json['llmProviders'] as Map<String, dynamic>?)?.map(
         (k, e) =>
             MapEntry(k, LLMProviderConfig.fromJson(e as Map<String, dynamic>)),
-      ) ??
-      const {
-        'OpenRouter': LLMProviderConfig(
-          baseUrl: 'https://openrouter.ai/api/v1',
-          apiKey: '',
-          model: 'google/gemini-2.0-flash-001',
-        ),
-        'OpenAI': LLMProviderConfig(
-          baseUrl: 'https://api.openai.com/v1',
-          apiKey: '',
-          model: 'gpt-4.1-mini',
-        ),
-        'Azure OpenAI': LLMProviderConfig(
-          baseUrl: 'https://your-resource.openai.azure.com',
-          apiKey: '',
-          model: 'gpt-4.1-mini',
-        ),
-        '自定义': LLMProviderConfig(baseUrl: '', apiKey: '', model: ''),
-      },
-);
+      ),
+    );
 
 Map<String, dynamic> _$TranslationConfigToJson(TranslationConfig instance) =>
     <String, dynamic>{
@@ -65,32 +45,6 @@ LLMProviderConfig _$LLMProviderConfigFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$LLMProviderConfigToJson(LLMProviderConfig instance) =>
     <String, dynamic>{
-      'baseUrl': instance.baseUrl,
-      'apiKey': instance.apiKey,
-      'model': instance.model,
-      'temperature': instance.temperature,
-      'maxTokens': instance.maxTokens,
-      'topP': instance.topP,
-      'frequencyPenalty': instance.frequencyPenalty,
-      'presencePenalty': instance.presencePenalty,
-    };
-
-LLMServiceConfig _$LLMServiceConfigFromJson(Map<String, dynamic> json) =>
-    LLMServiceConfig(
-      provider: json['provider'] as String? ?? 'OpenRouter',
-      baseUrl: json['baseUrl'] as String? ?? 'https://openrouter.ai/api/v1',
-      apiKey: json['apiKey'] as String? ?? '',
-      model: json['model'] as String? ?? 'google/gemini-2.0-flash-001',
-      temperature: (json['temperature'] as num?)?.toDouble() ?? 0.3,
-      maxTokens: (json['maxTokens'] as num?)?.toInt() ?? 8192,
-      topP: (json['topP'] as num?)?.toDouble() ?? 1.0,
-      frequencyPenalty: (json['frequencyPenalty'] as num?)?.toDouble() ?? 0.0,
-      presencePenalty: (json['presencePenalty'] as num?)?.toDouble() ?? 0.0,
-    );
-
-Map<String, dynamic> _$LLMServiceConfigToJson(LLMServiceConfig instance) =>
-    <String, dynamic>{
-      'provider': instance.provider,
       'baseUrl': instance.baseUrl,
       'apiKey': instance.apiKey,
       'model': instance.model,

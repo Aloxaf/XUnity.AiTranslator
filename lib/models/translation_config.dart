@@ -2,6 +2,87 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'translation_config.g.dart';
 
+// Provider 配置集中管理
+class ProviderDefinitions {
+  static const Map<String, ProviderDefinition> definitions = {
+    'OpenRouter': ProviderDefinition(
+      name: 'OpenRouter',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      defaultModel: 'google/gemini-2.0-flash-001',
+    ),
+    'OpenAI': ProviderDefinition(
+      name: 'OpenAI',
+      baseUrl: 'https://api.openai.com/v1',
+      defaultModel: 'gpt-4.1-mini',
+    ),
+    'DeepSeek': ProviderDefinition(
+      name: 'DeepSeek',
+      baseUrl: 'https://api.deepseek.com/v1',
+      defaultModel: 'deepseek-chat',
+    ),
+    'Google AI Studio': ProviderDefinition(
+      name: 'Google AI Studio',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      defaultModel: 'gemini-2.0-flash',
+    ),
+    '自定义': ProviderDefinition(name: '自定义', baseUrl: '', defaultModel: ''),
+  };
+
+  /// 获取所有Provider名称列表
+  static List<String> get providerNames => definitions.keys.toList();
+
+  /// 获取Provider的默认配置
+  static LLMProviderConfig getDefaultConfig(String providerName) {
+    final definition = definitions[providerName];
+    if (definition == null) {
+      throw ArgumentError('Unknown provider: $providerName');
+    }
+    return definition.toConfig();
+  }
+
+  /// 获取默认的Provider Map
+  static Map<String, LLMProviderConfig> get defaultProviderMap {
+    return definitions.map(
+      (key, definition) => MapEntry(key, definition.toConfig()),
+    );
+  }
+}
+
+class ProviderDefinition {
+  final String name;
+  final String baseUrl;
+  final String defaultModel;
+  final double defaultTemperature;
+  final int defaultMaxTokens;
+  final double defaultTopP;
+  final double defaultFrequencyPenalty;
+  final double defaultPresencePenalty;
+
+  const ProviderDefinition({
+    required this.name,
+    required this.baseUrl,
+    required this.defaultModel,
+    this.defaultTemperature = 0.3,
+    this.defaultMaxTokens = 8192,
+    this.defaultTopP = 1.0,
+    this.defaultFrequencyPenalty = 0.0,
+    this.defaultPresencePenalty = 0.0,
+  });
+
+  LLMProviderConfig toConfig({String? apiKey}) {
+    return LLMProviderConfig(
+      baseUrl: baseUrl,
+      apiKey: apiKey ?? '',
+      model: defaultModel,
+      temperature: defaultTemperature,
+      maxTokens: defaultMaxTokens,
+      topP: defaultTopP,
+      frequencyPenalty: defaultFrequencyPenalty,
+      presencePenalty: defaultPresencePenalty,
+    );
+  }
+}
+
 @JsonSerializable()
 class TranslationConfig {
   final int serverPort;
@@ -14,29 +95,19 @@ class TranslationConfig {
   const TranslationConfig({
     this.serverPort = 8080,
     this.promptTemplate =
-        'Translate the following text from {from} to {to}:\n\n{text}\n\nTranslation:',
-    this.outputRegex = r'Translation:\s*(.+)',
+        'Translate the following text from {from} to {to}:\n{text}',
+    this.outputRegex = r'.+',
     this.concurrency = 3,
     this.currentProvider = 'OpenRouter',
-    this.llmProviders = const {
-      'OpenRouter': LLMProviderConfig(
-        baseUrl: 'https://openrouter.ai/api/v1',
-        apiKey: '',
-        model: 'google/gemini-2.0-flash-001',
-      ),
-      'OpenAI': LLMProviderConfig(
-        baseUrl: 'https://api.openai.com/v1',
-        apiKey: '',
-        model: 'gpt-4.1-mini',
-      ),
-      'Azure OpenAI': LLMProviderConfig(
-        baseUrl: 'https://your-resource.openai.azure.com',
-        apiKey: '',
-        model: 'gpt-4.1-mini',
-      ),
-      '自定义': LLMProviderConfig(baseUrl: '', apiKey: '', model: ''),
-    },
-  });
+    Map<String, LLMProviderConfig>? llmProviders,
+  }) : llmProviders = llmProviders ?? const {};
+
+  // 使用工厂方法创建默认配置
+  factory TranslationConfig.defaultConfig() {
+    return TranslationConfig(
+      llmProviders: ProviderDefinitions.defaultProviderMap,
+    );
+  }
 
   factory TranslationConfig.fromJson(Map<String, dynamic> json) =>
       _$TranslationConfigFromJson(json);
@@ -46,24 +117,7 @@ class TranslationConfig {
   // 获取当前选中的LLM服务配置
   LLMProviderConfig get currentLLMConfig {
     return llmProviders[currentProvider] ??
-        llmProviders['OpenRouter'] ??
-        const LLMProviderConfig();
-  }
-
-  // 获取适配旧版本的LLMServiceConfig
-  LLMServiceConfig get llmService {
-    final currentConfig = currentLLMConfig;
-    return LLMServiceConfig(
-      provider: currentProvider,
-      baseUrl: currentConfig.baseUrl,
-      apiKey: currentConfig.apiKey,
-      model: currentConfig.model,
-      temperature: currentConfig.temperature,
-      maxTokens: currentConfig.maxTokens,
-      topP: currentConfig.topP,
-      frequencyPenalty: currentConfig.frequencyPenalty,
-      presencePenalty: currentConfig.presencePenalty,
-    );
+        ProviderDefinitions.getDefaultConfig(currentProvider);
   }
 
   TranslationConfig copyWith({
@@ -139,61 +193,6 @@ class LLMProviderConfig {
     double? presencePenalty,
   }) {
     return LLMProviderConfig(
-      baseUrl: baseUrl ?? this.baseUrl,
-      apiKey: apiKey ?? this.apiKey,
-      model: model ?? this.model,
-      temperature: temperature ?? this.temperature,
-      maxTokens: maxTokens ?? this.maxTokens,
-      topP: topP ?? this.topP,
-      frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
-      presencePenalty: presencePenalty ?? this.presencePenalty,
-    );
-  }
-}
-
-// 保持向后兼容性的类
-@JsonSerializable()
-class LLMServiceConfig {
-  final String provider;
-  final String baseUrl;
-  final String apiKey;
-  final String model;
-  final double temperature;
-  final int maxTokens;
-  final double topP;
-  final double frequencyPenalty;
-  final double presencePenalty;
-
-  const LLMServiceConfig({
-    this.provider = 'OpenRouter',
-    this.baseUrl = 'https://openrouter.ai/api/v1',
-    this.apiKey = '',
-    this.model = 'google/gemini-2.0-flash-001',
-    this.temperature = 0.3,
-    this.maxTokens = 8192,
-    this.topP = 1.0,
-    this.frequencyPenalty = 0.0,
-    this.presencePenalty = 0.0,
-  });
-
-  factory LLMServiceConfig.fromJson(Map<String, dynamic> json) =>
-      _$LLMServiceConfigFromJson(json);
-
-  Map<String, dynamic> toJson() => _$LLMServiceConfigToJson(this);
-
-  LLMServiceConfig copyWith({
-    String? provider,
-    String? baseUrl,
-    String? apiKey,
-    String? model,
-    double? temperature,
-    int? maxTokens,
-    double? topP,
-    double? frequencyPenalty,
-    double? presencePenalty,
-  }) {
-    return LLMServiceConfig(
-      provider: provider ?? this.provider,
       baseUrl: baseUrl ?? this.baseUrl,
       apiKey: apiKey ?? this.apiKey,
       model: model ?? this.model,

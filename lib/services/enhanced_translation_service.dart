@@ -44,7 +44,8 @@ class EnhancedTranslationService {
         text: text,
         from: from,
         to: to,
-        config: _config.llmService,
+        provider: _config.currentProvider,
+        config: _config.currentLLMConfig,
         promptTemplate: _config.promptTemplate,
         outputRegex: _config.outputRegex,
       );
