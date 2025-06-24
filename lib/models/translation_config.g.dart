@@ -25,17 +25,17 @@ TranslationConfig _$TranslationConfigFromJson(
         'OpenRouter': LLMProviderConfig(
           baseUrl: 'https://openrouter.ai/api/v1',
           apiKey: '',
-          model: 'anthropic/claude-3.5-sonnet',
+          model: 'google/gemini-2.0-flash-001',
         ),
         'OpenAI': LLMProviderConfig(
           baseUrl: 'https://api.openai.com/v1',
           apiKey: '',
-          model: 'gpt-4',
+          model: 'gpt-4.1-mini',
         ),
         'Azure OpenAI': LLMProviderConfig(
           baseUrl: 'https://your-resource.openai.azure.com',
           apiKey: '',
-          model: 'gpt-4',
+          model: 'gpt-4.1-mini',
         ),
         '自定义': LLMProviderConfig(baseUrl: '', apiKey: '', model: ''),
       },
@@ -70,7 +70,7 @@ LLMServiceConfig _$LLMServiceConfigFromJson(Map<String, dynamic> json) =>
       provider: json['provider'] as String? ?? 'OpenRouter',
       baseUrl: json['baseUrl'] as String? ?? 'https://openrouter.ai/api/v1',
       apiKey: json['apiKey'] as String? ?? '',
-      model: json['model'] as String? ?? 'anthropic/claude-3.5-sonnet',
+      model: json['model'] as String? ?? 'google/gemini-2.0-flash-001',
     );
 
 Map<String, dynamic> _$LLMServiceConfigToJson(LLMServiceConfig instance) =>

@@ -22,17 +22,17 @@ class TranslationConfig {
       'OpenRouter': LLMProviderConfig(
         baseUrl: 'https://openrouter.ai/api/v1',
         apiKey: '',
-        model: 'anthropic/claude-3.5-sonnet',
+        model: 'google/gemini-2.0-flash-001',
       ),
       'OpenAI': LLMProviderConfig(
         baseUrl: 'https://api.openai.com/v1',
         apiKey: '',
-        model: 'gpt-4',
+        model: 'gpt-4.1-mini',
       ),
       'Azure OpenAI': LLMProviderConfig(
         baseUrl: 'https://your-resource.openai.azure.com',
         apiKey: '',
-        model: 'gpt-4',
+        model: 'gpt-4.1-mini',
       ),
       '自定义': LLMProviderConfig(baseUrl: '', apiKey: '', model: ''),
     },
@@ -134,7 +134,7 @@ class LLMServiceConfig {
     this.provider = 'OpenRouter',
     this.baseUrl = 'https://openrouter.ai/api/v1',
     this.apiKey = '',
-    this.model = 'anthropic/claude-3.5-sonnet',
+    this.model = 'google/gemini-2.0-flash-001',
   });
 
   factory LLMServiceConfig.fromJson(Map<String, dynamic> json) =>

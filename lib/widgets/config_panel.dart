@@ -33,12 +33,12 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
   final Map<String, Map<String, String>> _providerDefaults = {
     'OpenRouter': {
       'baseUrl': 'https://openrouter.ai/api/v1',
-      'model': 'anthropic/claude-3.5-sonnet',
+      'model': 'google/gemini-2.0-flash-001',
     },
-    'OpenAI': {'baseUrl': 'https://api.openai.com/v1', 'model': 'gpt-4'},
+    'OpenAI': {'baseUrl': 'https://api.openai.com/v1', 'model': 'gpt-4.1-mini'},
     'Azure OpenAI': {
       'baseUrl': 'https://your-resource.openai.azure.com',
-      'model': 'gpt-4',
+      'model': 'gpt-4.1-mini',
     },
     '自定义': {'baseUrl': '', 'model': ''},
   };

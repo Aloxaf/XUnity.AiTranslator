@@ -126,12 +126,25 @@ final llmServiceProvider = Provider<LLMService>((ref) {
 
 final translationServiceProvider = Provider<EnhancedTranslationService>((ref) {
   final llmService = ref.watch(llmServiceProvider);
-  final config = ref.watch(configProvider);
-  return EnhancedTranslationService(llmService, config, ref);
+  final initialConfig = ref.read(configProvider);
+  final service = EnhancedTranslationService(llmService, initialConfig, ref);
+
+  // 监听配置变更并更新服务配置
+  ref.listen<TranslationConfig>(configProvider, (previous, next) {
+    if (previous != next) {
+      service.updateConfig(next);
+    }
+  });
+
+  ref.onDispose(() {
+    service.dispose();
+  });
+
+  return service;
 });
 
 final httpServerProvider = Provider<HttpTranslationServer>((ref) {
-  final translationService = ref.watch(translationServiceProvider);
+  final translationService = ref.read(translationServiceProvider);
   final server = HttpTranslationServer(translationService);
 
   ref.onDispose(() async {
@@ -146,8 +159,17 @@ final httpServerProvider = Provider<HttpTranslationServer>((ref) {
 // 服务器状态提供者
 final serverStateProvider =
     StateNotifierProvider<ServerStateNotifier, ServerState>((ref) {
-      final httpServer = ref.watch(httpServerProvider);
-      return ServerStateNotifier(httpServer);
+      final httpServer = ref.read(httpServerProvider);
+      final notifier = ServerStateNotifier(httpServer);
+
+      // 监听配置变更，智能重启服务器
+      ref.listen<TranslationConfig>(configProvider, (previous, next) {
+        if (previous != next) {
+          notifier.handleConfigChange(next);
+        }
+      });
+
+      return notifier;
     });
 
 class ServerState {
@@ -185,6 +207,7 @@ class ServerState {
 
 class ServerStateNotifier extends StateNotifier<ServerState> {
   final HttpTranslationServer _httpServer;
+  TranslationConfig? _lastConfig;
 
   ServerStateNotifier(this._httpServer) : super(const ServerState());
 
@@ -228,6 +251,60 @@ class ServerStateNotifier extends StateNotifier<ServerState> {
       }
       rethrow;
     }
+  }
+
+  /// 处理配置变更，智能决定是否需要重启服务
+  Future<void> handleConfigChange(TranslationConfig newConfig) async {
+    if (_lastConfig == null) {
+      _lastConfig = newConfig;
+      return;
+    }
+
+    final oldConfig = _lastConfig!;
+    _lastConfig = newConfig;
+
+    // 如果服务未运行，则不需要处理
+    if (!state.isRunning) {
+      return;
+    }
+
+    // 检查是否需要重启HTTP服务的配置项
+    final needsRestart = _needsServerRestart(oldConfig, newConfig);
+
+    if (needsRestart) {
+      try {
+        // 重启服务器
+        await _httpServer.stop();
+        await _httpServer.start(newConfig.serverPort);
+
+        if (mounted) {
+          state = ServerState(
+            isRunning: true,
+            port: newConfig.serverPort,
+            lastStartTime: DateTime.now(),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          state = ServerState(isRunning: false, error: e.toString());
+        }
+      }
+    }
+  }
+
+  /// 判断配置变更是否需要重启HTTP服务
+  bool _needsServerRestart(
+    TranslationConfig oldConfig,
+    TranslationConfig newConfig,
+  ) {
+    // 端口变更需要重启
+    if (oldConfig.serverPort != newConfig.serverPort) {
+      return true;
+    }
+
+    // 其他配置项（如并发数、提示词、LLM配置等）不需要重启HTTP服务
+    // 这些配置会通过 EnhancedTranslationService.updateConfig 动态更新
+    return false;
   }
 
   void clearError() {
