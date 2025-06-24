@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
@@ -17,10 +18,15 @@ class TranslationLogs extends ConsumerWidget {
       children: [
         // 页面标题
         PageHeader(
-          title: '翻译日志',
-          subtitle: '查看所有翻译请求的详细记录',
+          title: AppLocalizations.of(context).translationLogs,
+          subtitle: AppLocalizations.of(context).translationLogsSubtitle,
           icon: Icons.history,
-          actions: [if (logs.isNotEmpty) AppBadge(label: '${logs.length} 条记录')],
+          actions: [
+            if (logs.isNotEmpty)
+              AppBadge(
+                label: AppLocalizations.of(context).recordsCount(logs.length),
+              ),
+          ],
         ),
         if (logs.isNotEmpty)
           Padding(
@@ -36,7 +42,7 @@ class TranslationLogs extends ConsumerWidget {
                     Icons.clear_all,
                     size: AppTheme.iconSizeSmall,
                   ),
-                  label: const Text('清空日志'),
+                  label: Text(AppLocalizations.of(context).clearLogs),
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.errorColor,
                   ),
@@ -52,8 +58,10 @@ class TranslationLogs extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: logs.isEmpty
                 ? EmptyState(
-                    title: '暂无翻译记录',
-                    subtitle: '启动服务器并进行翻译后，记录将在这里显示',
+                    title: AppLocalizations.of(context).noTranslationRecords,
+                    subtitle: AppLocalizations.of(
+                      context,
+                    ).noTranslationRecordsSubtitle,
                     icon: Icons.history_outlined,
                   )
                 : Column(
@@ -67,7 +75,9 @@ class TranslationLogs extends ConsumerWidget {
                           ),
                         ),
                         child: CardHeader(
-                          title: '最近的翻译记录',
+                          title: AppLocalizations.of(
+                            context,
+                          ).recentTranslationRecords,
                           icon: Icons.list_alt,
                         ),
                       ),
@@ -196,7 +206,9 @@ class _TranslationLogItemState extends State<TranslationLogItem>
 
                     // 时长标签
                     AppChip.neutral(
-                      label: '${widget.log.duration.inMilliseconds}ms',
+                      label: AppLocalizations.of(
+                        context,
+                      ).duration(widget.log.duration.inMilliseconds),
                       fontSize: 10,
                     ),
                     const SizedBox(width: AppTheme.spacingMedium),
@@ -247,7 +259,7 @@ class _TranslationLogItemState extends State<TranslationLogItem>
 
                   // 原文
                   _buildContentSection(
-                    title: '原文',
+                    title: AppLocalizations.of(context).originalText,
                     content: widget.log.originalText,
                     color: AppTheme.infoColor,
                   ),
@@ -256,7 +268,7 @@ class _TranslationLogItemState extends State<TranslationLogItem>
                   // 译文或错误
                   if (widget.log.isSuccess)
                     _buildContentSection(
-                      title: '译文',
+                      title: AppLocalizations.of(context).translatedText,
                       content: widget.log.translatedText,
                       color: AppTheme.successColor,
                     )

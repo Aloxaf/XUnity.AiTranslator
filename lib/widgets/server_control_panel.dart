@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
@@ -82,8 +83,8 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
       children: [
         // 页面标题
         PageHeader(
-          title: '服务控制',
-          subtitle: '启动和管理 HTTP 翻译服务',
+          title: AppLocalizations.of(context).serverControl,
+          subtitle: AppLocalizations.of(context).serverControlSubtitle,
           icon: Icons.power_settings_new,
         ),
         const SizedBox(height: AppTheme.spacingXXXLarge),
@@ -93,14 +94,17 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CardHeader(title: '服务配置', icon: Icons.settings),
+              CardHeader(
+                title: AppLocalizations.of(context).serverConfiguration,
+                icon: Icons.settings,
+              ),
               const SizedBox(height: AppTheme.spacingXLarge),
               Row(
                 children: [
                   Expanded(
                     child: buildAutoSaveTextField(
                       controller: _portController,
-                      label: 'HTTP 服务端口',
+                      label: AppLocalizations.of(context).httpServerPort,
                       hint: '8080',
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -110,7 +114,7 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
                   Expanded(
                     child: buildAutoSaveTextField(
                       controller: _concurrencyController,
-                      label: '并发数量',
+                      label: AppLocalizations.of(context).concurrencyCount,
                       hint: '3',
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -129,23 +133,30 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CardHeader(title: '服务器状态', icon: Icons.dns),
+              CardHeader(
+                title: AppLocalizations.of(context).serverStatus,
+                icon: Icons.dns,
+              ),
               const SizedBox(height: AppTheme.spacingXLarge),
 
               // 状态指示器
               StatusIndicator(
                 isActive: serverState.isRunning,
-                activeText: '服务器运行中',
-                inactiveText: '服务器已停止',
+                activeText: AppLocalizations.of(context).serverRunning,
+                inactiveText: AppLocalizations.of(context).serverStopped,
                 subtitle: serverState.isRunning
-                    ? '端口: ${serverState.port}'
+                    ? AppLocalizations.of(context).port(serverState.port!)
                     : null,
               ),
 
               // 错误信息
               if (serverState.error != null) ...[
                 const SizedBox(height: AppTheme.spacingLarge),
-                InfoBox.error(message: '错误: ${serverState.error}'),
+                InfoBox.error(
+                  message: AppLocalizations.of(
+                    context,
+                  ).error(serverState.error!),
+                ),
               ],
 
               const SizedBox(height: AppTheme.spacingXXLarge),
@@ -161,7 +172,7 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
                                 .read(serverStateProvider.notifier)
                                 .startServer(config.serverPort),
                       icon: const Icon(Icons.play_arrow),
-                      label: const Text('启动服务器'),
+                      label: Text(AppLocalizations.of(context).startServer),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         disabledBackgroundColor: Colors.grey.shade800,
@@ -178,7 +189,7 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
                                 .stopServer()
                           : null,
                       icon: const Icon(Icons.stop),
-                      label: const Text('停止服务器'),
+                      label: Text(AppLocalizations.of(context).stopServer),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.errorColor,
                         foregroundColor: Colors.white,
@@ -201,12 +212,15 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CardHeader(title: 'API 端点信息', icon: Icons.api),
+                CardHeader(
+                  title: AppLocalizations.of(context).apiEndpoints,
+                  icon: Icons.api,
+                ),
                 const SizedBox(height: AppTheme.spacingXLarge),
 
                 CodeBlock(
-                  title: '翻译端点',
-                  description: '用于翻译文本的主要 API 端点',
+                  title: AppLocalizations.of(context).translateEndpoint,
+                  description: AppLocalizations.of(context).translateEndpoint,
                   code:
                       'curl "http://localhost:${serverState.port}/translate?from=en&to=zh&text=Hello"',
                   icon: Icons.translate,
@@ -215,8 +229,10 @@ class _ServerControlPanelState extends ConsumerState<ServerControlPanel>
                 const SizedBox(height: AppTheme.spacingLarge),
 
                 CodeBlock(
-                  title: '健康检查',
-                  description: '检查服务器运行状态',
+                  title: AppLocalizations.of(context).healthCheckEndpoint,
+                  description: AppLocalizations.of(
+                    context,
+                  ).healthCheckEndpoint,
                   code: 'curl "http://localhost:${serverState.port}/health"',
                   icon: Icons.health_and_safety,
                 ),

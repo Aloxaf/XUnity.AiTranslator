@@ -1,0 +1,286 @@
+{
+  "@@locale": "en",
+  "appTitle": "XUnity AI Translator",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "configuration": "Configuration",
+  "@configuration": {
+    "description": "Configuration tab label"
+  },
+  
+  "serverControl": "Server Control",
+  "@serverControl": {
+    "description": "Server control tab label"
+  },
+  
+  "translationLogs": "Translation Logs",
+  "@translationLogs": {
+    "description": "Translation logs tab label"
+  },
+  
+  "configurationSubtitle": "Configure AI models and translation parameters",
+  "@configurationSubtitle": {
+    "description": "Configuration page subtitle"
+  },
+  
+  "serverControlSubtitle": "Start and manage HTTP translation service",
+  "@serverControlSubtitle": {
+    "description": "Server control page subtitle"
+  },
+  
+  "translationLogsSubtitle": "View detailed records of all translation requests",
+  "@translationLogsSubtitle": {
+    "description": "Translation logs page subtitle"
+  },
+  
+  "llmConfiguration": "LLM Configuration",
+  "@llmConfiguration": {
+    "description": "LLM configuration section title"
+  },
+  
+  "provider": "Provider",
+  "@provider": {
+    "description": "Provider field label"
+  },
+  
+  "baseUrl": "Base URL",
+  "@baseUrl": {
+    "description": "Base URL field label"
+  },
+  
+  "apiKey": "API Key",
+  "@apiKey": {
+    "description": "API Key field label"
+  },
+  
+  "model": "Model",
+  "@model": {
+    "description": "Model field label"
+  },
+  
+  "temperature": "Temperature",
+  "@temperature": {
+    "description": "Temperature field label"
+  },
+  
+  "maxTokens": "Max Tokens",
+  "@maxTokens": {
+    "description": "Max tokens field label"
+  },
+  
+  "topP": "Top P",
+  "@topP": {
+    "description": "Top P field label"
+  },
+  
+  "frequencyPenalty": "Frequency Penalty",
+  "@frequencyPenalty": {
+    "description": "Frequency penalty field label"
+  },
+  
+  "presencePenalty": "Presence Penalty",
+  "@presencePenalty": {
+    "description": "Presence penalty field label"
+  },
+  
+  "translationConfiguration": "Translation Configuration",
+  "@translationConfiguration": {
+    "description": "Translation configuration section title"
+  },
+  
+  "promptTemplate": "Prompt Template",
+  "@promptTemplate": {
+    "description": "Prompt template field label"
+  },
+  
+  "outputRegex": "Output Regex",
+  "@outputRegex": {
+    "description": "Output regex field label"
+  },
+  
+  "serverConfiguration": "Server Configuration",
+  "@serverConfiguration": {
+    "description": "Server configuration section title"
+  },
+  
+  "httpServerPort": "HTTP Server Port",
+  "@httpServerPort": {
+    "description": "HTTP server port field label"
+  },
+  
+  "concurrencyCount": "Concurrency Count",
+  "@concurrencyCount": {
+    "description": "Concurrency count field label"
+  },
+  
+  "serverStatus": "Server Status",
+  "@serverStatus": {
+    "description": "Server status section title"
+  },
+  
+  "serverRunning": "Server Running",
+  "@serverRunning": {
+    "description": "Server running status"
+  },
+  
+  "serverStopped": "Server Stopped",
+  "@serverStopped": {
+    "description": "Server stopped status"
+  },
+  
+  "port": "Port: {port}",
+  "@port": {
+    "description": "Port display",
+    "placeholders": {
+      "port": {
+        "type": "int",
+        "example": "8080"
+      }
+    }
+  },
+  
+  "error": "Error: {error}",
+  "@error": {
+    "description": "Error message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Connection failed"
+      }
+    }
+  },
+  
+  "startServer": "Start Server",
+  "@startServer": {
+    "description": "Start server button"
+  },
+  
+  "stopServer": "Stop Server",
+  "@stopServer": {
+    "description": "Stop server button"
+  },
+  
+  "apiEndpoints": "API Endpoints",
+  "@apiEndpoints": {
+    "description": "API endpoints section title"
+  },
+  
+  "translateEndpoint": "Translation Endpoint",
+  "@translateEndpoint": {
+    "description": "Translation endpoint label"
+  },
+  
+  "healthCheckEndpoint": "Health Check Endpoint",
+  "@healthCheckEndpoint": {
+    "description": "Health check endpoint label"
+  },
+  
+  "noTranslationRecords": "No Translation Records",
+  "@noTranslationRecords": {
+    "description": "Empty state title for translation logs"
+  },
+  
+  "noTranslationRecordsSubtitle": "After starting the server and performing translations, records will be displayed here",
+  "@noTranslationRecordsSubtitle": {
+    "description": "Empty state subtitle for translation logs"
+  },
+  
+  "recentTranslationRecords": "Recent Translation Records",
+  "@recentTranslationRecords": {
+    "description": "Recent translation records section title"
+  },
+  
+  "clearLogs": "Clear Logs",
+  "@clearLogs": {
+    "description": "Clear logs button"
+  },
+  
+  "recordsCount": "{count} records",
+  "@recordsCount": {
+    "description": "Records count display",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  
+  "duration": "{duration}ms",
+  "@duration": {
+    "description": "Duration display",
+    "placeholders": {
+      "duration": {
+        "type": "int",
+        "example": "150"
+      }
+    }
+  },
+  
+  "originalText": "Original Text",
+  "@originalText": {
+    "description": "Original text label"
+  },
+  
+  "translatedText": "Translated Text",
+  "@translatedText": {
+    "description": "Translated text label"
+  },
+  
+  "requestDetails": "Request Details",
+  "@requestDetails": {
+    "description": "Request details section title"
+  },
+  
+  "responseDetails": "Response Details",
+  "@responseDetails": {
+    "description": "Response details section title"
+  },
+  
+  "noResponse": "No response content",
+  "@noResponse": {
+    "description": "No response message"
+  },
+  
+  "modelLoading": "Model Loading",
+  "@modelLoading": {
+    "description": "Model loading status"
+  },
+  
+  "modelReady": "Model Ready",
+  "@modelReady": {
+    "description": "Model ready status"
+  },
+  
+  "modelError": "Model Error",
+  "@modelError": {
+    "description": "Model error status"
+  },
+  
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading message"
+  },
+  
+  "ready": "Ready",
+  "@ready": {
+    "description": "Ready status"
+  },
+  
+  "modelStatus": "Model Status",
+  "@modelStatus": {
+    "description": "Model status section title"
+  },
+  
+  "testConnection": "Test Connection",
+  "@testConnection": {
+    "description": "Test connection button"
+  },
+
+  "advancedConfiguration": "Advanced Configuration",
+  "@advancedConfiguration": {
+    "description": "Advanced configuration section title"
+  }
+} 

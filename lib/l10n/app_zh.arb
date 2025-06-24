@@ -1,0 +1,67 @@
+{
+  "@@locale": "zh",
+  "appTitle": "XUnity AI 翻译器",
+  
+  "configuration": "配置",
+  "serverControl": "服务控制",
+  "translationLogs": "翻译日志",
+  
+  "configurationSubtitle": "配置 AI 模型和翻译参数",
+  "serverControlSubtitle": "启动和管理 HTTP 翻译服务",
+  "translationLogsSubtitle": "查看所有翻译请求的详细记录",
+  
+  "llmConfiguration": "LLM 配置",
+  "provider": "服务提供商",
+  "baseUrl": "基础 URL",
+  "apiKey": "API 密钥",
+  "model": "模型",
+  "temperature": "温度",
+  "maxTokens": "最大令牌数",
+  "topP": "Top P",
+  "frequencyPenalty": "频率惩罚",
+  "presencePenalty": "存在惩罚",
+  
+  "translationConfiguration": "翻译配置",
+  "promptTemplate": "提示词模板",
+  "outputRegex": "输出正则表达式",
+  
+  "serverConfiguration": "服务器配置",
+  "httpServerPort": "HTTP 服务端口",
+  "concurrencyCount": "并发数量",
+  
+  "serverStatus": "服务器状态",
+  "serverRunning": "服务器运行中",
+  "serverStopped": "服务器已停止",
+  "port": "端口: {port}",
+  "error": "错误: {error}",
+  
+  "startServer": "启动服务器",
+  "stopServer": "停止服务器",
+  
+  "apiEndpoints": "API 端点",
+  "translateEndpoint": "翻译端点",
+  "healthCheckEndpoint": "健康检查端点",
+  
+  "noTranslationRecords": "暂无翻译记录",
+  "noTranslationRecordsSubtitle": "启动服务器并进行翻译后，记录将在这里显示",
+  "recentTranslationRecords": "最近的翻译记录",
+  "clearLogs": "清空日志",
+  "recordsCount": "{count} 条记录",
+  "duration": "{duration}毫秒",
+  
+  "originalText": "原文",
+  "translatedText": "译文",
+  "requestDetails": "请求详情",
+  "responseDetails": "响应详情",
+  "noResponse": "无响应内容",
+  
+  "modelLoading": "模型加载中",
+  "modelReady": "模型就绪",
+  "modelError": "模型错误",
+  "loading": "加载中...",
+  "ready": "就绪",
+  "modelStatus": "模型状态",
+  "testConnection": "测试连接",
+
+  "advancedConfiguration": "高级配置"
+} 

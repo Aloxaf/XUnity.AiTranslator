@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xunity_ai_translator/services/llm_service.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../models/translation_config.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
@@ -335,8 +336,8 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
       onRefresh: () {
         ref.read(modelProvider(_selectedProvider).notifier).refreshModels();
       },
-      label: '模型',
-      hint: '选择或输入模型名称',
+      label: AppLocalizations.of(context).model,
+      hint: AppLocalizations.of(context).model,
       getItemId: (model) => model.id,
       getItemName: (model) => model.name,
       getItemDescription: (model) => model.description,
@@ -350,8 +351,8 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
       onSelected: (value) => _onProviderChanged(value),
       getItemId: (item) => item,
       getItemName: (item) => item,
-      label: 'LLM 服务提供商',
-      hint: '选择服务提供商',
+      label: AppLocalizations.of(context).provider,
+      hint: AppLocalizations.of(context).provider,
     );
   }
 
@@ -364,7 +365,11 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 页面标题
-        PageHeader(title: '应用配置', subtitle: '配置翻译服务的各项参数', icon: Icons.tune),
+        PageHeader(
+          title: AppLocalizations.of(context).configuration,
+          subtitle: AppLocalizations.of(context).configurationSubtitle,
+          icon: Icons.tune,
+        ),
         const SizedBox(height: AppTheme.spacingXXXLarge),
 
         // LLM 服务配置卡片
@@ -372,13 +377,16 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CardHeader(title: 'LLM 服务配置', icon: Icons.psychology),
+              CardHeader(
+                title: AppLocalizations.of(context).llmConfiguration,
+                icon: Icons.psychology,
+              ),
               const SizedBox(height: AppTheme.spacingXLarge),
               _buildProviderSelector(),
               const SizedBox(height: AppTheme.spacingLarge),
               buildAutoSaveTextField(
                 controller: _baseUrlController,
-                label: 'API 基础 URL',
+                label: AppLocalizations.of(context).baseUrl,
                 hint: 'https://openrouter.ai/api/v1',
                 inputFormatters: [BaseUrlTextInputFormatter()],
               ),
@@ -389,8 +397,8 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                     flex: 2,
                     child: buildAutoSaveTextField(
                       controller: _apiKeyController,
-                      label: 'API 密钥',
-                      hint: '输入您的 API 密钥',
+                      label: AppLocalizations.of(context).apiKey,
+                      hint: AppLocalizations.of(context).apiKey,
                       obscureText: true,
                     ),
                   ),
@@ -412,7 +420,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                     ),
                     const SizedBox(width: AppTheme.spacingMedium),
                     Text(
-                      '高级参数配置',
+                      AppLocalizations.of(context).advancedConfiguration,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary,
@@ -434,8 +442,10 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                             Expanded(
                               child: buildAutoSaveTextField(
                                 controller: _temperatureController,
-                                label: 'Temperature',
-                                hint: '0.0-2.0，控制输出随机性',
+                                label: AppLocalizations.of(
+                                  context,
+                                ).temperature,
+                                hint: '0.0-2.0',
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
@@ -449,8 +459,8 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                             Expanded(
                               child: buildAutoSaveTextField(
                                 controller: _maxTokensController,
-                                label: 'Max Tokens',
-                                hint: '1-32768，最大生成令牌数',
+                                label: AppLocalizations.of(context).maxTokens,
+                                hint: '1-32768',
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [
                                   RangeTextInputFormatter(min: 1, max: 32768),
@@ -461,8 +471,8 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                             Expanded(
                               child: buildAutoSaveTextField(
                                 controller: _topPController,
-                                label: 'Top P',
-                                hint: '0.0-1.0，控制采样多样性',
+                                label: AppLocalizations.of(context).topP,
+                                hint: '0.0-1.0',
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
@@ -480,8 +490,10 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                             Expanded(
                               child: buildAutoSaveTextField(
                                 controller: _frequencyPenaltyController,
-                                label: 'Frequency Penalty',
-                                hint: '-2.0到2.0，减少重复内容',
+                                label: AppLocalizations.of(
+                                  context,
+                                ).frequencyPenalty,
+                                hint: '-2.0 ~ 2.0',
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
@@ -496,8 +508,10 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                             Expanded(
                               child: buildAutoSaveTextField(
                                 controller: _presencePenaltyController,
-                                label: 'Presence Penalty',
-                                hint: '-2.0到2.0，鼓励新话题',
+                                label: AppLocalizations.of(
+                                  context,
+                                ).presencePenalty,
+                                hint: '-2.0 ~ 2.0',
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
@@ -533,19 +547,22 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CardHeader(title: '提示词配置', icon: Icons.edit_note),
+              CardHeader(
+                title: AppLocalizations.of(context).translationConfiguration,
+                icon: Icons.edit_note,
+              ),
               const SizedBox(height: AppTheme.spacingXLarge),
               buildAutoSaveTextField(
                 controller: _promptController,
-                label: '提示词模板',
-                hint: '支持 {from}, {to}, {text} 变量',
+                label: AppLocalizations.of(context).promptTemplate,
+                hint: 'Support variables: {from}, {to}, {text}',
                 maxLines: null,
                 minLines: 4,
               ),
               const SizedBox(height: AppTheme.spacingLarge),
               buildAutoSaveTextField(
                 controller: _regexController,
-                label: '输出提取正则表达式',
+                label: AppLocalizations.of(context).outputRegex,
                 hint: r'Translation:\s*(.+)',
               ),
               const SizedBox(height: AppTheme.spacingLarge),

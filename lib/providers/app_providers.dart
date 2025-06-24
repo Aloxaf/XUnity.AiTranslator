@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -5,7 +6,41 @@ import '../models/translation_config.dart';
 import '../services/llm_service.dart';
 import '../services/enhanced_translation_service.dart';
 import '../services/http_server.dart';
+import '../services/locale_service.dart';
 import 'package:flutter/foundation.dart';
+
+// 语言设置提供者
+final localeProvider = StateNotifierProvider<LocaleNotifier, Locale?>((ref) {
+  return LocaleNotifier();
+});
+
+class LocaleNotifier extends StateNotifier<Locale?> {
+  LocaleNotifier() : super(null) {
+    _loadSavedLocale();
+  }
+
+  Future<void> _loadSavedLocale() async {
+    final savedLocale = await LocaleService.getSavedLocale();
+    if (mounted) {
+      state = savedLocale ?? LocaleService.getSystemLocale();
+    }
+  }
+
+  Future<void> setLocale(Locale locale) async {
+    if (LocaleService.isLocaleSupported(locale)) {
+      state = locale;
+      await LocaleService.saveLocale(locale);
+    }
+  }
+
+  Future<void> setSystemLocale() async {
+    final systemLocale = LocaleService.getSystemLocale();
+    state = systemLocale;
+    await LocaleService.clearSavedLocale();
+  }
+
+  Locale get currentLocale => state ?? LocaleService.getSystemLocale();
+}
 
 // 配置提供者
 final configProvider = StateNotifierProvider<ConfigNotifier, TranslationConfig>(
