@@ -223,10 +223,11 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
             _currentIndex = index;
           });
         },
+        physics: const NeverScrollableScrollPhysics(),
         children: const [
           _ContentWrapper(child: ConfigPanel()),
           _ContentWrapper(child: ServerControlPanel()),
-          _ContentWrapper(child: TranslationLogs()),
+          _ContentWrapper(isExpandable: true, child: TranslationLogs()),
         ],
       ),
     );
@@ -247,11 +248,15 @@ class _TabItem {
 
 class _ContentWrapper extends StatelessWidget {
   final Widget child;
+  final bool isExpandable;
 
-  const _ContentWrapper({required this.child});
+  const _ContentWrapper({required this.child, this.isExpandable = false});
 
   @override
   Widget build(BuildContext context) {
+    if (isExpandable) {
+      return Padding(padding: const EdgeInsets.all(32), child: child);
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: child,

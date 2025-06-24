@@ -1,3 +1,4 @@
 {
-  "cmake.sourceDirectory": "/home/ll/Coding/Flutter/xunity_ai_translator/linux"
+  "cmake.sourceDirectory": "/home/ll/Coding/Flutter/xunity_ai_translator/linux",
+  "dart.flutterSdkPath": ".fvm/versions/stable"
 }

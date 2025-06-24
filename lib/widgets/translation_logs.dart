@@ -88,64 +88,67 @@ class TranslationLogs extends ConsumerWidget {
         const SizedBox(height: 32),
 
         // 日志列表
-        Container(
-          height: 600,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.grey.shade800.withValues(alpha: 0.5),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.grey.shade800.withValues(alpha: 0.5),
+              ),
             ),
-          ),
-          child: logs.isEmpty
-              ? _buildEmptyState()
-              : Column(
-                  children: [
-                    // 列表头部
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Colors.grey.shade800.withValues(alpha: 0.3),
+            child: logs.isEmpty
+                ? _buildEmptyState()
+                : Column(
+                    children: [
+                      // 列表头部
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.grey.shade800.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
                           ),
                         ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.list_alt,
+                              color: const Color(0xFF6366F1),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '最近的翻译记录',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.list_alt,
-                            color: const Color(0xFF6366F1),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '最近的翻译记录',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                          ),
-                        ],
+                      // 日志项列表
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: logs.length,
+                          itemBuilder: (context, index) {
+                            final log = logs[index];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: TranslationLogItem(log: log),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    // 日志项列表
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: logs.length,
-                        itemBuilder: (context, index) {
-                          final log = logs[index];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: TranslationLogItem(log: log),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );
