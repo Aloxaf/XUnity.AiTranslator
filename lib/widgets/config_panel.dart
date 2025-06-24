@@ -442,9 +442,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                             Expanded(
                               child: buildAutoSaveTextField(
                                 controller: _temperatureController,
-                                label: AppLocalizations.of(
-                                  context,
-                                ).temperature,
+                                label: AppLocalizations.of(context).temperature,
                                 hint: '0.0-2.0',
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
@@ -528,8 +526,9 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                         ),
                         const SizedBox(height: AppTheme.spacingLarge),
                         InfoBox.info(
-                          message:
-                              'Temperature 控制输出随机性，Top P 控制采样多样性，Penalty 参数用于减少重复和鼓励新内容',
+                          message: AppLocalizations.of(
+                            context,
+                          ).advancedConfigurationHint,
                         ),
                       ],
                     ),
@@ -566,9 +565,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
                 hint: r'Translation:\s*(.+)',
               ),
               const SizedBox(height: AppTheme.spacingLarge),
-              InfoBox.info(
-                message: '提示词模板支持变量：{from} 源语言，{to} 目标语言，{text} 待翻译文本',
-              ),
+              InfoBox.info(message: AppLocalizations.of(context).templateHint),
             ],
           ),
         ),

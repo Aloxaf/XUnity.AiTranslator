@@ -282,5 +282,15 @@
   "advancedConfiguration": "Advanced Configuration",
   "@advancedConfiguration": {
     "description": "Advanced configuration section title"
+  },
+
+  "templateHint": "Prompt template supports variables: '{from}' source language, '{to}' target language, '{text}' text to be translated",
+  "@templateHint": {
+    "description": "Prompt template hint"
+  },
+
+  "advancedConfigurationHint": "Temperature controls output randomness, Top P controls sampling diversity, Penalty parameters are used to reduce repetition and encourage new content",
+  "@advancedConfigurationHint": {
+    "description": "Advanced configuration hint"
   }
 } 

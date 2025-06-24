@@ -175,4 +175,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get advancedConfiguration => 'Advanced Configuration';
+
+  @override
+  String get templateHint =>
+      'Prompt template supports variables: {from} source language, {to} target language, {text} text to be translated';
+
+  @override
+  String get advancedConfigurationHint =>
+      'Temperature controls output randomness, Top P controls sampling diversity, Penalty parameters are used to reduce repetition and encourage new content';
 }

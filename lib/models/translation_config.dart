@@ -95,7 +95,7 @@ class TranslationConfig {
   const TranslationConfig({
     this.serverPort = 8080,
     this.promptTemplate =
-        'Translate the following text from {from} to {to}:\n{text}',
+        'Translate the following text from {from} to {to} without any explanation:\n{text}',
     this.outputRegex = r'.+',
     this.concurrency = 3,
     this.currentProvider = 'OpenRouter',

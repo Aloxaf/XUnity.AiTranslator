@@ -409,6 +409,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Advanced Configuration'**
   String get advancedConfiguration;
+
+  /// Prompt template hint
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt template supports variables: \'{from}\' source language, \'{to}\' target language, \'{text}\' text to be translated'**
+  String get templateHint;
+
+  /// Advanced configuration hint
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature controls output randomness, Top P controls sampling diversity, Penalty parameters are used to reduce repetition and encourage new content'**
+  String get advancedConfigurationHint;
 }
 
 class _AppLocalizationsDelegate
