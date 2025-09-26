@@ -8,7 +8,7 @@
 
 ```ini
 [Service]
-Endpoint=Custom
+Endpoint=CustomTranslate
 FallbackEndpoint=
 
 [General]
@@ -16,7 +16,7 @@ Language=zh
 FromLanguage=ja
 
 [Custom]
-Url=http://127.0.0.1:9000/translate
+Url=http://127.0.0.1:8080/translate
 EnableShortDelay=False
 DisableSpamChecks=False
 ```
