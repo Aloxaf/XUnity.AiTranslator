@@ -7,7 +7,9 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
@@ -38,22 +40,21 @@ jobs:
       - name: Build
         run: flutter build ${{ matrix.platform }}
 
-      - name: Create archive
+      - name: Create Linux archive
+        if: matrix.platform == 'linux'
+        run: tar -czf xunity_ai_translator-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz -C build/${{ matrix.platform }}/x64/release/bundle/ .
+
+      - name: Create Windows archive
+        if: matrix.platform == 'windows'
+        shell: pwsh
         run: |
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            cd build/${{ matrix.platform }}/x64/release/bundle/
-            zip -r xunity_ai_translator-${{ matrix.platform }}-${{ github.ref_name }}.zip .
-            mv xunity_ai_translator-${{ matrix.platform }}-${{ github.ref_name }}.zip $GITHUB_WORKSPACE/
-          else
-            tar -czf xunity_ai_translator-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz -C build/${{ matrix.platform }}/x64/release/bundle/ .
-          fi
+          cd build\${{ matrix.platform }}\x64\runner\Release\
+          Compress-Archive -Path * -DestinationPath $env:GITHUB_WORKSPACE\xunity_ai_translator-${{ matrix.platform }}-${{ github.ref_name }}.zip
 
       - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             xunity_ai_translator-${{ matrix.platform }}-${{ github.ref_name }}.*
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
