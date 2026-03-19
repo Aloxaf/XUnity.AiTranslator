@@ -6,20 +6,28 @@ part of 'translation_config.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-TranslationConfig _$TranslationConfigFromJson(Map<String, dynamic> json) =>
-    TranslationConfig(
-      serverPort: (json['serverPort'] as num?)?.toInt() ?? 8080,
-      promptTemplate:
-          json['promptTemplate'] as String? ??
-          'Translate the following text from {from} to {to}:\n{text}',
-      outputRegex: json['outputRegex'] as String? ?? r'.+',
-      concurrency: (json['concurrency'] as num?)?.toInt() ?? 3,
-      currentProvider: json['currentProvider'] as String? ?? 'OpenRouter',
-      llmProviders: (json['llmProviders'] as Map<String, dynamic>?)?.map(
-        (k, e) =>
-            MapEntry(k, LLMProviderConfig.fromJson(e as Map<String, dynamic>)),
-      ),
-    );
+TranslationConfig _$TranslationConfigFromJson(
+  Map<String, dynamic> json,
+) => TranslationConfig(
+  serverPort: (json['serverPort'] as num?)?.toInt() ?? 8080,
+  promptTemplate:
+      json['promptTemplate'] as String? ??
+      'Translate the following text from {from} to {to} without any explanation:\n{text}',
+  outputRegex: json['outputRegex'] as String? ?? r'.+',
+  concurrency: (json['concurrency'] as num?)?.toInt() ?? 3,
+  currentProvider: json['currentProvider'] as String? ?? 'OpenRouter',
+  llmProviders: (json['llmProviders'] as Map<String, dynamic>?)?.map(
+    (k, e) =>
+        MapEntry(k, LLMProviderConfig.fromJson(e as Map<String, dynamic>)),
+  ),
+  contextLimitType:
+      $enumDecodeNullable(
+        _$ContextLimitTypeEnumMap,
+        json['contextLimitType'],
+      ) ??
+      ContextLimitType.byCount,
+  contextLimit: (json['contextLimit'] as num?)?.toInt() ?? 0,
+);
 
 Map<String, dynamic> _$TranslationConfigToJson(TranslationConfig instance) =>
     <String, dynamic>{
@@ -29,7 +37,14 @@ Map<String, dynamic> _$TranslationConfigToJson(TranslationConfig instance) =>
       'concurrency': instance.concurrency,
       'currentProvider': instance.currentProvider,
       'llmProviders': instance.llmProviders,
+      'contextLimitType': _$ContextLimitTypeEnumMap[instance.contextLimitType]!,
+      'contextLimit': instance.contextLimit,
     };
+
+const _$ContextLimitTypeEnumMap = {
+  ContextLimitType.byCount: 'byCount',
+  ContextLimitType.byChars: 'byChars',
+};
 
 LLMProviderConfig _$LLMProviderConfigFromJson(Map<String, dynamic> json) =>
     LLMProviderConfig(

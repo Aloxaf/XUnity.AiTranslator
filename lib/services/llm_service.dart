@@ -145,6 +145,7 @@ class LLMService {
     required LLMProviderConfig config,
     required String promptTemplate,
     required String outputRegex,
+    String context = '',
   }) async {
     if (text.trim().isEmpty) {
       throw ArgumentError('Translation text cannot be empty');
@@ -160,6 +161,7 @@ class LLMService {
         from: from,
         to: to,
         text: text,
+        context: context,
       );
 
       final response = await _makeRequest(provider, config, prompt);
@@ -182,11 +184,13 @@ class LLMService {
     required String from,
     required String to,
     required String text,
+    String context = '',
   }) {
     return template
         .replaceAll('{from}', from)
         .replaceAll('{to}', to)
-        .replaceAll('{text}', text);
+        .replaceAll('{text}', text)
+        .replaceAll('{context}', context);
   }
 
   Future<Response> _makeRequest(

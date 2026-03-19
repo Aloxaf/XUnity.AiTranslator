@@ -173,9 +173,29 @@ class AppLocalizationsZh extends AppLocalizations {
   String get advancedConfiguration => '高级配置';
 
   @override
-  String get templateHint => '提示词模板支持变量：{from} 源语言，{to} 目标语言，{text} 待翻译文本';
+  String get templateHint =>
+      '提示词模板支持变量：{from} 源语言，{to} 目标语言，{text} 待翻译文本，{context} 近期翻译历史';
 
   @override
   String get advancedConfigurationHint =>
       'Temperature 控制输出随机性，Top P 控制采样多样性，Penalty 参数用于减少重复和鼓励新内容';
+
+  @override
+  String get contextConfiguration => '上下文配置';
+
+  @override
+  String get contextLimitType => '限制方式';
+
+  @override
+  String get contextByCount => '按条目数量';
+
+  @override
+  String get contextByChars => '按字符数量';
+
+  @override
+  String get contextLimit => '限制值（0 = 禁用）';
+
+  @override
+  String get contextHint =>
+      '在提示词模板中使用 {context} 时，将被替换为近期翻译历史（每行一条，格式为：原文\\t译文）。将限制值设为 0 可禁用上下文功能。';
 }

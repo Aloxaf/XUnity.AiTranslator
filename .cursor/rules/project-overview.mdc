@@ -1,0 +1,56 @@
+---
+description: Project overview — purpose, architecture, and key files for XUnity.AiTranslator
+alwaysApply: true
+---
+
+# XUnity.AiTranslator — Project Overview
+
+## Purpose
+
+A Flutter desktop application that acts as a **local LLM translation endpoint** for [XUnity.AutoTranslator](https://github.com/bbepis/XUnity.AutoTranslator) (a Unity game auto-translation plugin). It runs an embedded HTTP server (default port 8080) that XUnity connects to via its `CustomTranslate` endpoint. The app provides a GUI to configure LLM providers, prompt templates, concurrency, and output filtering.
+
+XUnity config:
+```ini
+[Custom]
+Url=http://127.0.0.1:8080/translate
+```
+
+## Architecture
+
+Three logical layers:
+
+1. **HTTP layer** — `shelf`-based server exposing `GET/POST /translate`, `GET /health`, `GET /info`
+2. **Translation layer** — concurrency-controlled orchestrator that acquires slots, calls the LLM, and records logs
+3. **LLM client layer** — OpenAI-compatible chat completions client with model listing and caching
+
+State is managed with **Riverpod**; config is persisted via **shared_preferences**.
+
+## Directory Layout
+
+```
+lib/
+  main.dart                              # Entry point; 3-tab side-nav (Config / Server / Logs)
+  models/translation_config.dart         # Core models: TranslationConfig, LLMProviderConfig, ProviderDefinitions
+  providers/app_providers.dart           # All Riverpod providers (config, server state, logs, locale)
+  services/
+    http_server.dart                     # shelf HTTP server
+    enhanced_translation_service.dart    # Slot-based concurrency + translation orchestration
+    llm_service.dart                     # LLM API client (OpenAI-compatible)
+    locale_service.dart                  # UI language persistence
+  widgets/
+    config_panel.dart                    # Full settings GUI
+    server_control_panel.dart            # Start/stop + status
+    translation_logs.dart                # Real-time log viewer
+    language_switcher.dart               # EN/ZH toggle
+  theme/app_theme.dart                   # Dark theme constants and spacing tokens
+  l10n/                                  # EN + ZH ARB localization files
+go/                                      # go-flutter (hover) alternative desktop embedding
+linux/ windows/                          # Standard Flutter native runners
+```
+
+## Key Design Decisions
+
+- **Multiple providers**: OpenAI, DeepSeek, OpenRouter, Google AI Studio, and custom — each with its own API key, base URL, model, and sampling params. Active provider is switched at runtime.
+- **Hot config reload**: Only a port change restarts the HTTP server; all other config (prompt, model, concurrency) is applied live via `EnhancedTranslationService.updateConfig`.
+- **Slot-based concurrency**: Configurable limit (default 3) on simultaneous in-flight LLM requests.
+- **Localization**: UI supports EN and ZH via Flutter's `flutter_localizations` + `intl`.

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xunity_ai_translator/services/llm_service.dart';
 import '../l10n/generated/app_localizations.dart';
-import '../models/translation_config.dart';
+import '../models/translation_config.dart' show TranslationConfig, LLMProviderConfig, ProviderDefinitions, ContextLimitType;
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
 import 'auto_save_mixin.dart';
@@ -91,8 +91,10 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
   late TextEditingController _topPController;
   late TextEditingController _frequencyPenaltyController;
   late TextEditingController _presencePenaltyController;
+  late TextEditingController _contextLimitController;
 
   String _selectedProvider = 'OpenRouter';
+  ContextLimitType _contextLimitType = ContextLimitType.byCount;
 
   @override
   void initState() {
@@ -130,7 +132,11 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
     _presencePenaltyController = TextEditingController(
       text: currentConfig.presencePenalty.toString(),
     );
+    _contextLimitController = TextEditingController(
+      text: config.contextLimit.toString(),
+    );
     _selectedProvider = config.currentProvider;
+    _contextLimitType = config.contextLimitType;
   }
 
   @override
@@ -154,6 +160,9 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
             .toString();
         _presencePenaltyController.text = currentConfig.presencePenalty
             .toString();
+
+        _contextLimitController.text = config.contextLimit.toString();
+        _contextLimitType = config.contextLimitType;
       });
 
       // 模型重新加载现在由ModelNotifier自动处理
@@ -202,6 +211,8 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
           promptTemplate: _promptController.text,
           outputRegex: _regexController.text,
           currentProvider: _selectedProvider,
+          contextLimitType: _contextLimitType,
+          contextLimit: int.tryParse(_contextLimitController.text) ?? 0,
         );
   }
 
@@ -213,6 +224,8 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
     return a.promptTemplate == b.promptTemplate &&
         a.outputRegex == b.outputRegex &&
         a.currentProvider == b.currentProvider &&
+        a.contextLimitType == b.contextLimitType &&
+        a.contextLimit == b.contextLimit &&
         aCurrentConfig.baseUrl == bCurrentConfig.baseUrl &&
         aCurrentConfig.apiKey == bCurrentConfig.apiKey &&
         aCurrentConfig.model == bCurrentConfig.model &&
@@ -235,6 +248,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
     _topPController.dispose();
     _frequencyPenaltyController.dispose();
     _presencePenaltyController.dispose();
+    _contextLimitController.dispose();
     super.dispose();
   }
 
@@ -554,7 +568,7 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
               buildAutoSaveTextField(
                 controller: _promptController,
                 label: AppLocalizations.of(context).promptTemplate,
-                hint: 'Support variables: {from}, {to}, {text}',
+                hint: 'Support variables: {from}, {to}, {text}, {context}',
                 maxLines: null,
                 minLines: 4,
               ),
@@ -566,6 +580,91 @@ class _ConfigPanelState extends ConsumerState<ConfigPanel> with AutoSaveMixin {
               ),
               const SizedBox(height: AppTheme.spacingLarge),
               InfoBox.info(message: AppLocalizations.of(context).templateHint),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: AppTheme.spacingXXLarge),
+
+        // 上下文配置卡片
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CardHeader(
+                title: AppLocalizations.of(context).contextConfiguration,
+                icon: Icons.history,
+              ),
+              const SizedBox(height: AppTheme.spacingXLarge),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).contextLimitType,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Radio<ContextLimitType>(
+                              value: ContextLimitType.byCount,
+                              groupValue: _contextLimitType,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() => _contextLimitType = value);
+                                  scheduleAutoSave();
+                                }
+                              },
+                            ),
+                            Text(
+                              AppLocalizations.of(context).contextByCount,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            const SizedBox(width: AppTheme.spacingXLarge),
+                            Radio<ContextLimitType>(
+                              value: ContextLimitType.byChars,
+                              groupValue: _contextLimitType,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() => _contextLimitType = value);
+                                  scheduleAutoSave();
+                                }
+                              },
+                            ),
+                            Text(
+                              AppLocalizations.of(context).contextByChars,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingLarge),
+                  Expanded(
+                    child: buildAutoSaveTextField(
+                      controller: _contextLimitController,
+                      label: AppLocalizations.of(context).contextLimit,
+                      hint: '0',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        RangeTextInputFormatter(min: 0, max: 100000),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.spacingLarge),
+              InfoBox.info(
+                message: AppLocalizations.of(context).contextHint,
+              ),
             ],
           ),
         ),

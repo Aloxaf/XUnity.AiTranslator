@@ -178,9 +178,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get templateHint =>
-      'Prompt template supports variables: {from} source language, {to} target language, {text} text to be translated';
+      'Prompt template supports variables: {from} source language, {to} target language, {text} text to be translated, {context} recent translation history';
 
   @override
   String get advancedConfigurationHint =>
       'Temperature controls output randomness, Top P controls sampling diversity, Penalty parameters are used to reduce repetition and encourage new content';
+
+  @override
+  String get contextConfiguration => 'Context Configuration';
+
+  @override
+  String get contextLimitType => 'Limit Type';
+
+  @override
+  String get contextByCount => 'By entry count';
+
+  @override
+  String get contextByChars => 'By character count';
+
+  @override
+  String get contextLimit => 'Limit (0 = disabled)';
+
+  @override
+  String get contextHint =>
+      'When {context} is used in the prompt template, it will be replaced with recent translation history (one entry per line: original text tab translated text). Set limit to 0 to disable context.';
 }

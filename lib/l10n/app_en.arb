@@ -284,7 +284,7 @@
     "description": "Advanced configuration section title"
   },
 
-  "templateHint": "Prompt template supports variables: '{from}' source language, '{to}' target language, '{text}' text to be translated",
+  "templateHint": "Prompt template supports variables: '{from}' source language, '{to}' target language, '{text}' text to be translated, '{context}' recent translation history",
   "@templateHint": {
     "description": "Prompt template hint"
   },
@@ -292,5 +292,35 @@
   "advancedConfigurationHint": "Temperature controls output randomness, Top P controls sampling diversity, Penalty parameters are used to reduce repetition and encourage new content",
   "@advancedConfigurationHint": {
     "description": "Advanced configuration hint"
+  },
+
+  "contextConfiguration": "Context Configuration",
+  "@contextConfiguration": {
+    "description": "Context configuration section title"
+  },
+
+  "contextLimitType": "Limit Type",
+  "@contextLimitType": {
+    "description": "Context limit type label"
+  },
+
+  "contextByCount": "By entry count",
+  "@contextByCount": {
+    "description": "Context limit by number of entries"
+  },
+
+  "contextByChars": "By character count",
+  "@contextByChars": {
+    "description": "Context limit by number of characters"
+  },
+
+  "contextLimit": "Limit (0 = disabled)",
+  "@contextLimit": {
+    "description": "Context limit value field label"
+  },
+
+  "contextHint": "When '{context}' is used in the prompt template, it will be replaced with recent translation history (one entry per line: original text tab translated text). Set limit to 0 to disable context.",
+  "@contextHint": {
+    "description": "Context configuration hint"
   }
 } 

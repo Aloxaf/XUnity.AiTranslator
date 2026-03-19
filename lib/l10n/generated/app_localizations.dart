@@ -413,7 +413,7 @@ abstract class AppLocalizations {
   /// Prompt template hint
   ///
   /// In en, this message translates to:
-  /// **'Prompt template supports variables: \'{from}\' source language, \'{to}\' target language, \'{text}\' text to be translated'**
+  /// **'Prompt template supports variables: \'{from}\' source language, \'{to}\' target language, \'{text}\' text to be translated, \'{context}\' recent translation history'**
   String get templateHint;
 
   /// Advanced configuration hint
@@ -421,6 +421,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Temperature controls output randomness, Top P controls sampling diversity, Penalty parameters are used to reduce repetition and encourage new content'**
   String get advancedConfigurationHint;
+
+  /// Context configuration section title
+  ///
+  /// In en, this message translates to:
+  /// **'Context Configuration'**
+  String get contextConfiguration;
+
+  /// Context limit type label
+  ///
+  /// In en, this message translates to:
+  /// **'Limit Type'**
+  String get contextLimitType;
+
+  /// Context limit by number of entries
+  ///
+  /// In en, this message translates to:
+  /// **'By entry count'**
+  String get contextByCount;
+
+  /// Context limit by number of characters
+  ///
+  /// In en, this message translates to:
+  /// **'By character count'**
+  String get contextByChars;
+
+  /// Context limit value field label
+  ///
+  /// In en, this message translates to:
+  /// **'Limit (0 = disabled)'**
+  String get contextLimit;
+
+  /// Context configuration hint
+  ///
+  /// In en, this message translates to:
+  /// **'When \'{context}\' is used in the prompt template, it will be replaced with recent translation history (one entry per line: original text tab translated text). Set limit to 0 to disable context.'**
+  String get contextHint;
 }
 
 class _AppLocalizationsDelegate

@@ -83,6 +83,8 @@ class ProviderDefinition {
   }
 }
 
+enum ContextLimitType { byCount, byChars }
+
 @JsonSerializable()
 class TranslationConfig {
   final int serverPort;
@@ -91,6 +93,9 @@ class TranslationConfig {
   final int concurrency;
   final String currentProvider;
   final Map<String, LLMProviderConfig> llmProviders;
+  // Context window: limits how many past translations are injected via {context}
+  final ContextLimitType contextLimitType;
+  final int contextLimit;
 
   const TranslationConfig({
     this.serverPort = 8080,
@@ -100,6 +105,8 @@ class TranslationConfig {
     this.concurrency = 3,
     this.currentProvider = 'OpenRouter',
     Map<String, LLMProviderConfig>? llmProviders,
+    this.contextLimitType = ContextLimitType.byCount,
+    this.contextLimit = 0,
   }) : llmProviders = llmProviders ?? const {};
 
   // 使用工厂方法创建默认配置
@@ -127,6 +134,8 @@ class TranslationConfig {
     int? concurrency,
     String? currentProvider,
     Map<String, LLMProviderConfig>? llmProviders,
+    ContextLimitType? contextLimitType,
+    int? contextLimit,
   }) {
     return TranslationConfig(
       serverPort: serverPort ?? this.serverPort,
@@ -135,6 +144,8 @@ class TranslationConfig {
       concurrency: concurrency ?? this.concurrency,
       currentProvider: currentProvider ?? this.currentProvider,
       llmProviders: llmProviders ?? this.llmProviders,
+      contextLimitType: contextLimitType ?? this.contextLimitType,
+      contextLimit: contextLimit ?? this.contextLimit,
     );
   }
 
